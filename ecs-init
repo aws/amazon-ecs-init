@@ -82,7 +82,11 @@ start() {
 	[ -x ${docker} ] || return 3
 
 	printt "Starting Amazon EC2 Container Service Agent"
-	docker rm ecs-agent &>/dev/null
+	existing_agent_container_id="$(docker ps -a | awk '/ecs-agent/ {print $1;}')"
+	if [ -n "$existing_agent_container_id" ]; then
+		printt "Removing existing agent container ID: ${ecs_agent_container_id}"
+		docker rm -f ${existing_agent_container_id}  &>/dev/null
+	fi
 	docker run \
 		--name ecs-agent \
 		-v /var/run/docker.sock:/var/run/docker.sock \

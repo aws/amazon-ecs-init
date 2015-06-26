@@ -161,7 +161,7 @@ func (c *Client) loadEnvVariables() []string {
 
 func (c *Client) getHostConfig() *godocker.HostConfig {
 	binds := []string{
-		defaultDockerEndpoint + ":" + defaultDockerEndpoint,
+		dockerUnixSocket + ":" + dockerUnixSocket,
 		config.LogDirectory() + ":" + logDir,
 		config.AgentDataDirectory() + ":" + dataDir,
 		config.AgentConfigDirectory() + ":" + config.AgentConfigDirectory(),

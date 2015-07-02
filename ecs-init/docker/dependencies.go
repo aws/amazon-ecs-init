@@ -17,18 +17,10 @@ package docker
 
 import (
 	"io/ioutil"
-	"os"
-	"strings"
+
+	"github.com/aws/amazon-ecs-init/ecs-init/config"
 
 	godocker "github.com/fsouza/go-dockerclient"
-)
-
-const (
-	unixPrefix = "unix://"
-)
-
-var (
-	dockerUnixSocket = getDockerUnixSocket()
 )
 
 type dockerclient interface {
@@ -46,15 +38,8 @@ type _dockerclient struct {
 	docker *godocker.Client
 }
 
-func getDockerUnixSocket() string {
-	if dockerHost := os.Getenv("DOCKER_HOST"); strings.HasPrefix(dockerHost, unixPrefix) {
-		return strings.TrimPrefix(dockerHost, unixPrefix)
-	}
-	return "/var/run/docker.sock"
-}
-
 func newDockerClient() (*_dockerclient, error) {
-	client, err := godocker.NewVersionedClient(unixPrefix+dockerUnixSocket, "1.15")
+	client, err := godocker.NewVersionedClient(config.UnixSocketPrefix+config.DockerUnixSocket(), "1.15")
 	if err != nil {
 		return nil, err
 	}

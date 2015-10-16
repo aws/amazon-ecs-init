@@ -11,6 +11,8 @@
 # CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and
 # limitations under the License.
+VERSION := $(shell git describe --tags | sed -e 's/v//' -e 's/-.*//')
+
 .PHONY: dev generate lint static test build-mock-images sources rpm
 
 dev:
@@ -50,17 +52,29 @@ srpm: sources
 rpm: sources
 	rpmbuild -bb ecs-init.spec
 
+ubuntu-trusty:
+	cp packaging/ubuntu-trusty/ecs.conf ecs.conf
+	tar -czf ./amazon-ecs-init_${VERSION}.orig.tar.gz ecs-init ecs.conf scripts README.md
+	mkdir -p BUILDROOT
+	cp -r packaging/ubuntu-trusty/debian BUILDROOT/debian
+	cp -r ecs-init BUILDROOT
+	cp ecs.conf BUILDROOT
+	cp -r scripts BUILDROOT
+	cp README.md BUILDROOT
+	cd BUILDROOT && debuild
+
 get-deps:
 	go get github.com/tools/godep
 	go get golang.org/x/tools/cover
 	go get golang.org/x/tools/cmd/cover
 
 clean:
-	-rm ecs-init.spec
-	-rm ecs.conf
-	-rm ./sources.tgz
-	-rm ./amazon-ecs-init
-	-rm ./ecs-init-*.src.rpm
-	-rm ./ecs-init-* -r
-	-rm ./BUILDROOT -r
-	-rm ./x86_64 -r
+	@rm ecs-init.spec >/dev/null 2>&1 ||:
+	@rm ecs.conf >/dev/null 2>&1 ||:
+	@rm ./sources.tgz >/dev/null 2>&1 ||:
+	@rm ./amazon-ecs-init >/dev/null 2>&1 ||:
+	@rm ./ecs-init-*.src.rpm >/dev/null 2>&1 ||:
+	@rm ./ecs-init-* -r >/dev/null 2>&1 ||:
+	@rm ./BUILDROOT -r >/dev/null 2>&1 ||:
+	@rm ./x86_64 -r >/dev/null 2>&1 ||:
+	@rm ./amazon-ecs-init_${VERSION}* >/dev/null 2>&1 ||:

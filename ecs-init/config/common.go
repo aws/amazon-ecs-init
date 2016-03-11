@@ -19,8 +19,8 @@ import (
 )
 
 const (
-	// AgentImageName is the name of the Docker image containing the Agent
-	AgentImageName = "amazon/amazon-ecs-agent:latest"
+	// DefaultAgentImageName is the name of the Docker image containing the Agent
+	DefaultAgentImageName = "amazon/amazon-ecs-agent:latest"
 
 	// AgentContainerName is the name of the Agent container started by this program
 	AgentContainerName = "ecs-agent"
@@ -30,6 +30,15 @@ const (
 
 	UnixSocketPrefix = "unix://"
 )
+
+// AgentImageName returns the ECS agent image name as configured in the environment, or the default value of DefaultAgentImageName
+func AgentImageName() string {
+	agent := os.Getenv("ECS_AGENT_IMAGE_NAME")
+	if agent != "" {
+		return agent
+	}
+	return DefaultAgentImageName
+}
 
 // AgentConfigDirectory returns the location on disk for configuration
 func AgentConfigDirectory() string {

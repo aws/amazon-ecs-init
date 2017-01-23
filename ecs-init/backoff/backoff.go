@@ -15,7 +15,8 @@ package backoff
 
 import (
 	"math"
-	mathrand "math/rand"
+	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -34,6 +35,7 @@ type retryBackoff struct {
 	multiple       float64
 	maxRetries     int
 	count          int
+	countLock      sync.RWMutex
 }
 
 // NewBackoff creates a Backoff which ranges from min to max increasing by
@@ -55,6 +57,8 @@ func NewBackoff(min, max time.Duration, jitterMultiple, multiple float64, maxRet
 }
 
 func (rb *retryBackoff) Duration() time.Duration {
+	rb.countLock.Lock()
+	defer rb.countLock.Unlock()
 	ret := rb.current
 	rb.count += 1
 	rb.current = time.Duration(math.Min(float64(rb.max.Nanoseconds()), float64(float64(rb.current.Nanoseconds())*rb.multiple)))
@@ -62,6 +66,9 @@ func (rb *retryBackoff) Duration() time.Duration {
 }
 
 func (rb *retryBackoff) ShouldRetry() bool {
+	rb.countLock.RLock()
+	defer rb.countLock.RUnlock()
+
 	return rb.count < rb.maxRetries
 }
 
@@ -72,7 +79,7 @@ func addJitter(duration time.Duration, jitter time.Duration) time.Duration {
 	if jitter.Nanoseconds() == 0 {
 		randJitter = 0
 	} else {
-		randJitter = mathrand.Int63n(jitter.Nanoseconds())
+		randJitter = rand.Int63n(jitter.Nanoseconds())
 	}
 	return time.Duration(duration.Nanoseconds() + randJitter)
 }

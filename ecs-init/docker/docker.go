@@ -48,7 +48,7 @@ const (
 	backoffMultiple = 2
 	// maxRetries specifies the maximum number of retries for ping to return
 	// a successful response from the docker socket
-	maxRetries = 4
+	maxRetries = 5
 )
 
 // Client enables business logic for running the Agent inside Docker
@@ -59,7 +59,7 @@ type Client struct {
 
 // NewClient reutrns a new Client
 func NewClient() (*Client, error) {
-	// Create a backoff for pinging the docker socker. This should result in 12-14
+	// Create a backoff for pinging the docker socker. This should result in 17-19
 	// seconds of delay in the worst-case between different actions that depend on
 	// docker
 	pingBackoff := backoff.NewBackoff(minBackoffDuration, maxBackoffDuration, backoffJitterMultiple,

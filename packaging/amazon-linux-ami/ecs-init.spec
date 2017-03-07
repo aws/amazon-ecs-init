@@ -151,6 +151,7 @@ fi
 %changelog
 * Mon Mar 6 2017 Adnan Khan <adnkha@amazon.com> - 1.14.1-1
 - Cache Agent version 1.14.1
+- Add ubuntu-trusty packaging [#74](https://github.com/aws/amazon-ecs-init/pull/72)
 * Wed Jan 25 2017 Anirudh Aithal <aithal@amazon.com> - 1.14.0-2
 - Add retry-backoff for pinging the Docker socket when creating the Docker client
 * Mon Jan 16 2017 Derek Petersen <petderek@amazon.com> - 1.14.0-1

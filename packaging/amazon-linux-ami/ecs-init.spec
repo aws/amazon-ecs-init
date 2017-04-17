@@ -87,7 +87,7 @@ touch $RPM_BUILD_ROOT/%{cache_dir}/state
 
 %files
 %defattr(-,root,root,-)
-%{init_dir}/ecs.conf
+%config(noreplace) %{init_dir}/ecs.conf
 %{bin_dir}/amazon-ecs-init
 %{man_dir}/amazon-ecs-init.1.gz
 %config(noreplace) %ghost %{conf_dir}/ecs.config

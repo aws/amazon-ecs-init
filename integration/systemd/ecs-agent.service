@@ -1,0 +1,61 @@
+# Copyright 2017 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the
+# "License"). You may not use this file except in compliance
+# with the License. A copy of the License is located at
+#
+#     http://aws.amazon.com/apache2.0/
+#
+# or in the "license" file accompanying this file. This file is
+# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+# CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and
+# limitations under the License.
+#
+# A systemd unit file to run `ecs-agent` in a Docker container. This service
+# attempts to duplicate the functionality of the `ecs-init` Golang package. The
+# notable differences currently are:
+# 1. The unit file does an unconditional pull of the latest ECS Agent from
+# Docker Hub at startup.
+# 2. The unit file does not currently handle the Agent's self-upgrade
+# functionality.
+
+[Unit]
+Description=Amazon ECS Agent
+Documentation=http://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_agent.html
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=simple
+ExecStartPre=/usr/bin/docker pull amazon/amazon-ecs-agent:latest
+ExecStartPre=/sbin/iptables -t nat -A PREROUTING -d 169.254.170.2/32 \
+ -p tcp -m tcp --dport 80 -j DNAT --to-destination 127.0.0.1:51679
+ExecStartPre=/sbin/iptables -t nat -A OUTPUT -d 169.254.170.2/32 \
+ -p tcp -m tcp --dport 80 -j REDIRECT --to-ports 51679
+ExecStartPre=/sbin/sysctl -w net.ipv4.conf.all.route_localnet=1
+ExecStartPre=-/usr/bin/docker rm ecs-agent
+ExecStart=/usr/bin/docker run --name ecs-agent \
+  --restart=on-failure:10 \
+  --volume=/var/run:/var/run \
+  --volume=/var/log/ecs/:/log \
+  --volume=/var/lib/ecs/data:/data \
+  --volume=/etc/ecs:/etc/ecs \
+  --net=host \
+  --env ECS_LOGFILE=/log/ecs-agent.log \
+  --env ECS_DATADIR=/data \
+  --env ECS_UPDATES_ENABLED=false \
+  --env ECS_AVAILABLE_LOGGING_DRIVERS='["json-file","syslog","awslogs"]' \
+  --env ECS_ENABLE_TASK_IAM_ROLE=true \
+  --env ECS_ENABLE_TASK_IAM_ROLE_NETWORK_HOST=true \
+  --env-file=/etc/ecs/ecs.config \
+  amazon/amazon-ecs-agent:latest
+ExecStop=/usr/bin/docker stop ecs-agent
+ExecStopPost=-/sbin/iptables -t nat -D PREROUTING -d 169.254.170.2/32 \
+ -p tcp -m tcp --dport 80 -j DNAT --to-destination 127.0.0.1:51679
+ExecStopPost=-/sbin/iptables -t nat -D OUTPUT -d 169.254.170.2/32 \
+ -p tcp -m tcp --dport 80 -j REDIRECT --to-ports 51679
+ExecStopPost=/bin/sh -c \
+ "/sbin/sysctl -w net.ipv4.conf.all.route_localnet=$(/sbin/sysctl -q -n net.ipv4.conf.default.route_localnet)"
+Restart=on-failure
+RestartPreventExitStatus=5

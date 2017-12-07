@@ -27,7 +27,7 @@ Requires=docker.service
 After=docker.service
 
 [Service]
-Environment=AGENT_TAG=v1.15.0
+Environment=AGENT_TAG=v1.16.0
 Type=simple
 # Load an updated agent, if it exists:
 ExecStartPre=-/bin/sh -c 'test -f /var/cache/ecs/desired-image && docker load $(cat /var/cache/ecs/desired-image) && rm -f $(cat /var/cache/ecs/desired-image) /var/cache/ecs/desired-image'
@@ -39,12 +39,21 @@ ExecStartPre=/sbin/iptables -t nat -A OUTPUT -d 169.254.170.2/32 \
  -p tcp -m tcp --dport 80 -j REDIRECT --to-ports 51679
 ExecStartPre=/sbin/sysctl -w net.ipv4.conf.all.route_localnet=1
 ExecStartPre=-/usr/bin/docker rm ecs-agent
+ExecStartPre=-/bin/mkdir -p /var/lib/ecs/dhclient
 ExecStart=/usr/bin/docker run --name ecs-agent \
+  --init \
   --restart=on-failure:10 \
   --volume=/var/run:/var/run \
   --volume=/var/log/ecs/:/log \
   --volume=/var/lib/ecs/data:/data \
   --volume=/etc/ecs:/etc/ecs \
+  --volume=/sbin:/sbin \
+  --volume=/lib:/lib \
+  --volume=/lib64:/lib64 \
+  --volume=/usr/lib:/usr/lib \
+  --volume=/proc:/host/proc \
+  --volume=/sys/fs/cgroup:/sys/fs/cgroup \
+  --volume=/var/lib/ecs/dhclient:/var/lib/dhclient \
   --net=host \
   --env ECS_LOGFILE=/log/ecs-agent.log \
   --env ECS_DATADIR=/data \
@@ -53,7 +62,10 @@ ExecStart=/usr/bin/docker run --name ecs-agent \
   --env ECS_ENABLE_TASK_IAM_ROLE=true \
   --env ECS_ENABLE_TASK_IAM_ROLE_NETWORK_HOST=true \
   --env ECS_UPDATES_ENABLED=true \
+  --env ECS_ENABLE_TASK_ENI=true \
   --env-file=/etc/ecs/ecs.config \
+  --cap-add=sys_admin \
+  --cap-add=net_admin \
   amazon/amazon-ecs-agent:${AGENT_TAG}
 ExecStop=/usr/bin/docker stop ecs-agent
 ExecStopPost=-/sbin/iptables -t nat -D PREROUTING -d 169.254.170.2/32 \

@@ -1,3 +1,9 @@
+amazon-ecs-init (1.17.0-1) trusty; urgency=medium
+
+  * Cache Agent version 1.17.0
+
+ -- Derek Petersen <petderek@amazon.com>  Tue, 19 Dec 2017 11:10:33 -0800
+
 amazon-ecs-init (1.16.0-1) trusty; urgency=medium
 
   * Cache Agent version 1.16.0

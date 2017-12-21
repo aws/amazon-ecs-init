@@ -26,6 +26,9 @@ Documentation=http://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_age
 Requires=docker.service
 After=docker.service
 
+[Install]
+WantedBy=multi-user.target
+
 [Service]
 Environment=AGENT_TAG=v1.16.0
 Type=simple

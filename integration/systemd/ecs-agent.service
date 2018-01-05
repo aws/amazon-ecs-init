@@ -30,7 +30,7 @@ After=docker.service
 WantedBy=multi-user.target
 
 [Service]
-Environment=AGENT_TAG=v1.16.0
+Environment=AGENT_TAG=v1.16.1
 Type=simple
 # Load an updated agent, if it exists:
 ExecStartPre=-/bin/sh -c 'test -f /var/cache/ecs/desired-image && docker load $(cat /var/cache/ecs/desired-image) && rm -f $(cat /var/cache/ecs/desired-image) /var/cache/ecs/desired-image'

@@ -14,7 +14,7 @@
 
 Name:           ecs-init
 Version:        1.17.2
-Release:        1%{?dist}
+Release:        2%{?dist}
 Group:          System Environment/Base
 Vendor:         Amazon.com
 License:        Apache 2.0

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 Name:           ecs-init
-Version:        1.17.3
+Version:        1.17.4
 Release:        1%{?dist}
 Group:          System Environment/Base
 Vendor:         Amazon.com
@@ -152,6 +152,10 @@ if [ -e %{running_semaphore} ]; then
 fi
 
 %changelog
+* Fri May 04 2018 Haikuo Liu <haikuo@amazon.com> - 1.17.4-1
+- Cache Agent vesion 1.17.4
+- Download agent based on the partition
+- Mount Docker plugin files dir
 * Fri Mar 30 2018 Justin Haynes <jushay@amazon.com> - 1.17.3-1
 - Cache Agent vesion 1.17.3
 - Use s3client instead of httpclient when downloading

@@ -1,3 +1,10 @@
+amazon-ecs-init (1.17.4-1) trusty; urgency=medium
+
+    * Cache Agent version 1.17.4
+    * Download agent based on the partition
+    * Mount Docker plugin files dir
+   -- Haikuo Liu <haikuo@amazon.com>  Fri, 04 May 2018 13:30:22 -0800
+
 amazon-ecs-init (1.17.3-1) trusty; urgency=medium
 
   * Cache Agent version 1.17.3

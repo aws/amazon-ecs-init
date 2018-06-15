@@ -1,4 +1,4 @@
-// Copyright 2015-2016 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2015-2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"). You may
 // not use this file except in compliance with the License. A copy of the
@@ -237,6 +237,7 @@ func validateCommonCreateContainerOptions(opts godocker.CreateContainerOptions, 
 	expectKey("ECS_ENABLE_TASK_IAM_ROLE_NETWORK_HOST=true", envVariables, t)
 	expectKey("ECS_ENABLE_TASK_ENI=true", envVariables, t)
 	expectKey("ECS_ENABLE_AWSLOGS_EXECUTIONROLE_OVERRIDE=true", envVariables, t)
+	expectKey("ECS_CGROUP_PATH="+config.CgroupMountpoint(), envVariables, t)
 
 	if cfg.Image != config.AgentImageName {
 		t.Errorf("Expected image to be %s", config.AgentImageName)
@@ -258,6 +259,7 @@ func validateCommonCreateContainerOptions(opts godocker.CreateContainerOptions, 
 	expectKey(config.AgentConfigDirectory()+":"+config.AgentConfigDirectory(), binds, t)
 	expectKey(config.CacheDirectory()+":"+config.CacheDirectory(), binds, t)
 	expectKey(config.ProcFS+":"+hostProcDir+":ro", binds, t)
+	expectKey(config.CgroupMountpoint()+":"+config.CgroupMountpoint(), binds, t)
 	expectKey(config.AgentDHClientLeasesDirectory()+":"+dhclientLeasesLocation, binds, t)
 	expectKey(dhclientLibDir+":"+dhclientLibDir+":ro", binds, t)
 	expectKey(dhclientExecutableDir+":"+dhclientExecutableDir+":ro", binds, t)

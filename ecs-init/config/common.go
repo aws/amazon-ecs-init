@@ -1,4 +1,4 @@
-// Copyright 2015 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2015-2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"). You may
 // not use this file except in compliance with the License. A copy of the
@@ -47,8 +47,10 @@ const (
 	DefaultRegionName = endpoints.UsEast1RegionID
 
 	// cgroupMountpointEnv is the Environment Variable used to provide
-	// an alternative path to the cgroup mount on the host.
-	cgroupMountpointEnv = "CGROUP_MOUNTPOINT"
+	// an alternative path to the cgroup mount on the host. This is the
+	// same environment variable as is used by the ECS agent to specify
+	// the cgroup path.
+	cgroupMountpointEnv = "ECS_CGROUP_PATH"
 )
 
 var partitionBucketMap = map[string]string{

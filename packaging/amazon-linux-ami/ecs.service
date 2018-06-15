@@ -13,7 +13,7 @@
 # limitations under the License.
 
 [Unit]
-Description=ECS Agent
+Description=Amazon ECS agent
 Requires=docker.service
 After=docker.service
 After=cloud-final.service
@@ -22,7 +22,13 @@ After=cloud-final.service
 Type=simple
 Restart=on-failure
 RestartSec=10s
-Environment=CGROUP_MOUNTPOINT=/sys/fs/cgroup
+Environment=ECS_CGROUP_PATH=/sys/fs/cgroup
+# Environment variable overrides can be placed in the ecs.config file
+# to configure the ECS agent.  Please visit the AWS ECS Documentation
+# for details on the configurable options for the ECS agent:
+#
+# https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-agent-config.html
+EnvironmentFile=-/etc/ecs/ecs.config
 ExecStartPre=/usr/libexec/amazon-ecs-init pre-start
 ExecStart=/usr/libexec/amazon-ecs-init start
 ExecStop=/usr/libexec/amazon-ecs-init stop

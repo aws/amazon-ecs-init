@@ -1,4 +1,4 @@
-// Copyright 2015-2017 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2015-2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"). You may
 // not use this file except in compliance with the License. A copy of the
@@ -81,8 +81,6 @@ const (
 	// For more information on setns, please read this manpage:
 	// http://man7.org/linux/man-pages/man2/setns.2.html
 	CapSysAdmin = "SYS_ADMIN"
-	// DefaultCgroupMountpoint is the default mount point for the cgroup subsystem
-	DefaultCgroupMountpoint = "/sys/fs/cgroup"
 	// pluginSocketFilesDir specifies the location of UNIX domain socket files of
 	// Docker plugins
 	pluginSocketFilesDir = "/run/docker/plugins"
@@ -218,6 +216,7 @@ func (c *Client) getContainerConfig() *godocker.Config {
 		"ECS_AVAILABLE_LOGGING_DRIVERS":         `["json-file","syslog","awslogs","none"]`,
 		"ECS_ENABLE_TASK_IAM_ROLE":              "true",
 		"ECS_ENABLE_TASK_IAM_ROLE_NETWORK_HOST": "true",
+		"ECS_CGROUP_PATH":                       config.CgroupMountpoint(),
 	}
 
 	// merge in platform-specific environment variables
@@ -274,7 +273,7 @@ func (c *Client) getHostConfig() *godocker.HostConfig {
 		config.AgentDataDirectory() + ":" + dataDir,
 		config.AgentConfigDirectory() + ":" + config.AgentConfigDirectory(),
 		config.CacheDirectory() + ":" + config.CacheDirectory(),
-		config.CgroupMountpoint() + ":" + DefaultCgroupMountpoint,
+		config.CgroupMountpoint() + ":" + config.CgroupMountpoint(),
 	}
 	binds = append(binds, getDockerPluginDirBinds()...)
 	return createHostConfig(binds)

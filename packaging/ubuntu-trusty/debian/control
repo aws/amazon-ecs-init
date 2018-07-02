@@ -10,7 +10,7 @@ Vcs-Browser: http://github.com/aws/amazon-ecs-init
 
 Package: amazon-ecs-init
 Architecture: amd64
-Depends: ${shlibs:Depends}, ${misc:Depends}, docker-engine (>= 1.6.0)
+Depends: ${shlibs:Depends}, ${misc:Depends}, docker-engine (>= 1.6.0) | docker-ce
 Description: Starts the Amazon ECS Agent
  amazon-ecs-init may be run to register an EC2 instance as an Amazon ECS
  Container Instance.

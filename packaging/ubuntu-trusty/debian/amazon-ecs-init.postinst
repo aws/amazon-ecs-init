@@ -1,0 +1,5 @@
+if [ -f /bin/systemctl ]; then
+    /bin/systemctl daemon-reload
+    /bin/systemctl enable ecs
+    /bin/systemctl start ecs
+fi

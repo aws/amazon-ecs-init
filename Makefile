@@ -68,11 +68,13 @@ rpm: .rpm-done
 
 ubuntu-trusty:
 	cp packaging/ubuntu-trusty/ecs.conf ecs.conf
-	tar -czf ./amazon-ecs-init_${VERSION}.orig.tar.gz ecs-init ecs.conf scripts README.md
+	cp packaging/ubuntu-trusty/ecs.service ecs.service
+	tar -czf ./amazon-ecs-init_${VERSION}.orig.tar.gz ecs-init ecs.conf ecs.service scripts README.md
 	mkdir -p BUILDROOT
 	cp -r packaging/ubuntu-trusty/debian BUILDROOT/debian
 	cp -r ecs-init BUILDROOT
 	cp packaging/ubuntu-trusty/ecs.conf BUILDROOT
+	cp packaging/ubuntu-trusty/ecs.service BUILDROOT
 	cp -r scripts BUILDROOT
 	cp README.md BUILDROOT
 	cd BUILDROOT && debuild $(shell [ "$(DEB_SIGN)" -ne "0" ] || echo "-uc -us")

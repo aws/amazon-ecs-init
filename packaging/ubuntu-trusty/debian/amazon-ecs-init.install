@@ -1,2 +1,3 @@
 amazon-ecs-init usr/sbin/
 ecs.conf etc/init
+ecs.service etc/systemd/system

@@ -24,7 +24,7 @@ Restart=on-failure
 RestartSec=10s
 ExecStartPre=/usr/sbin/amazon-ecs-init pre-start
 ExecStart=/usr/sbin/amazon-ecs-init start
-ExecStop=/usr/sbin/amazon-ecs-init stop
+ExecStop=/usr/sbin/amazon-ecs-init pre-stop
 ExecStopPost=/usr/sbin/amazon-ecs-init post-stop
 
 [Install]

@@ -40,7 +40,16 @@ func createHostConfig(binds []string) *godocker.HostConfig {
 		dhclientLibDir+":"+dhclientLibDir+readOnly,
 		dhclientExecutableDir+":"+dhclientExecutableDir+readOnly)
 
+	// Bit ugly adding the log rotation configuration here inline, consider
+	// revising to make this easier to read.
 	return &godocker.HostConfig{
+		LogConfig:   godocker.LogConfig{
+			Type: "json-file",
+			Config: map[string]string{
+				"max-size": "256m",
+				"max-file": "8",
+			},
+		},
 		Binds:       binds,
 		NetworkMode: networkMode,
 		UsernsMode:  usernsMode,

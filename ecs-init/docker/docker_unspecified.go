@@ -34,14 +34,17 @@ func getPlatformSpecificEnvVariables() map[string]string {
 // It mounts dhclient executable, leases and pid file directories when built
 // for Amazon Linux AMI
 func createHostConfig(binds []string) *godocker.HostConfig {
+
 	binds = append(binds,
 		config.ProcFS+":"+hostProcDir+readOnly,
 		config.AgentDHClientLeasesDirectory()+":"+dhclientLeasesLocation,
 		dhclientLibDir+":"+dhclientLibDir+readOnly,
 		dhclientExecutableDir+":"+dhclientExecutableDir+readOnly)
 
+	maxJsonFiles := string
+	maxJsonSize := string
 	maxJsonSize, maxJsonFiles = config.AgentStdoutStderrLoggingMaxSize()
-	logConfig = godocker.LogConfig{
+	logConfig := godocker.LogConfig{
 		Type: "json-file",
 		Config: map[string]string{
 			"max-size": maxJsonSize,

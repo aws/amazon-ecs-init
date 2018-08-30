@@ -41,9 +41,7 @@ func createHostConfig(binds []string) *godocker.HostConfig {
 		dhclientLibDir+":"+dhclientLibDir+readOnly,
 		dhclientExecutableDir+":"+dhclientExecutableDir+readOnly)
 
-	maxJsonFiles := string
-	maxJsonSize := string
-	maxJsonSize, maxJsonFiles = config.AgentStdoutStderrLoggingMaxSize()
+	maxJsonSize, maxJsonFiles := config.AgentStdoutStderrLoggingMaxSize()
 	logConfig := godocker.LogConfig{
 		Type: "json-file",
 		Config: map[string]string{

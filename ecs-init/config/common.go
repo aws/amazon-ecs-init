@@ -138,12 +138,18 @@ func DockerUnixSocket() (string, bool) {
 	if dockerHost := os.Getenv("DOCKER_HOST"); strings.HasPrefix(dockerHost, UnixSocketPrefix) {
 		return strings.TrimPrefix(dockerHost, UnixSocketPrefix), true
 	}
-	// return /var/run instead of /var/run/docker.sock, in case the /var/run/docker.sock is deleted and recreated outside the container,
-	// eg: Docker daemon restart
+	// return /var/run instead of /var/run/docker.sock, in case the /var/run/docker.sock is deleted and recreated
+	// outside the container, eg: Docker daemon restart
 	return "/var/run", false
 }
 
 // CgroupMountpoint returns the cgroup mountpoint for the system
 func CgroupMountpoint() string {
 	return cgroupMountpoint
+}
+
+// AgentStdoutStderrLoggingMaxSizeMaxFile returns a tuple of the Maximum log file size and maximum number of log files
+// to be rotated, e.g. 256m, 8
+func AgentStdoutStderrLoggingMaxSize() (string, string) {
+	return "256m", "8"
 }

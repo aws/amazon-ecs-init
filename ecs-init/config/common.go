@@ -151,5 +151,5 @@ func CgroupMountpoint() string {
 // AgentStdoutStderrLoggingMaxSizeMaxFile returns a tuple of the Maximum log file size and maximum number of log files
 // to be rotated, e.g. 256m, 8
 func AgentStdoutStderrLoggingMaxSize() (string, string) {
-	return "256m", "8"
+	return "16m", "4"
 }

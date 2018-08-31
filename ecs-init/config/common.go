@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws/endpoints"
+	godocker "github.com/fsouza/go-dockerclient"
 	"github.com/pkg/errors"
 )
 
@@ -148,8 +149,15 @@ func CgroupMountpoint() string {
 	return cgroupMountpoint
 }
 
-// AgentStdoutStderrLoggingMaxSizeMaxFile returns a tuple of the Maximum log file size and maximum number of log files
-// to be rotated, e.g. 256m, 8
-func AgentStdoutStderrLoggingMaxSize() (string, string) {
-	return "16m", "4"
+// AgentLogDriverConfiguration returns a LogConfig object to be used by the agent. It defaults to a json file with
+// max-size of 16m and max-file of 4. At the moment this is not configurable.
+func AgentLogDriverConfiguration() godocker.LogConfig {
+	// TODO: Refactor code to allow use of environment variables to change LogConfig object
+	return godocker.LogConfig{
+		Type: "json-file",
+		Config: map[string]string{
+			"max-size": "16m",
+			"max-file": "4",
+		},
+	}
 }

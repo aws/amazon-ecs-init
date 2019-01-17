@@ -70,7 +70,7 @@ const (
 	backoffMultiple = 2
 	// maxRetries specifies the maximum number of retries for ping to return
 	// a successful response from the docker socket
-	maxRetries = 5
+	maxRetries = 10
 	// CapNetAdmin to start agent with NET_ADMIN capability
 	// For more information on capabilities, please read this manpage:
 	// http://man7.org/linux/man-pages/man7/capabilities.7.html

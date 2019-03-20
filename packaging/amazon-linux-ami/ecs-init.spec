@@ -31,7 +31,7 @@
 %endif
 
 Name:           ecs-init
-Version:        1.26.0
+Version:        1.26.1
 Release:        1%{?dist}
 License:        Apache 2.0
 Summary:        Amazon Elastic Container Service initialization application
@@ -254,7 +254,10 @@ fi
 %endif
 
 %changelog
-* Thu Feb 28 2019 Derek Petersen <petderek@amazon.com> - 1.26.0
+* Thu Mar 20 2019 Yumeng Xie <yumex@amazon.com> - 1.26.1-1
+- Cache Agent version 1.26.1
+
+* Thu Feb 28 2019 Derek Petersen <petderek@amazon.com> - 1.26.0-1
 - Cache Agent version 1.26.0
 - Add support for running iptables within agent container
 

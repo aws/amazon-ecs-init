@@ -1,0 +1,55 @@
+name: amazon-ecs-init
+version: git
+summary: The Amazon Elastic Container Service RPM.
+description: 
+  
+adopt-info: amazon-ecs-init
+
+grade: stable
+confinement: strict
+
+architectures:
+  - build-on: i386
+  - build-on: amd64
+  - build-on: armhf
+  - build-on: arm64
+
+apps:
+  amazon-ecs-init:
+    command: bin/amazon-ecs-init
+    plugs:
+      - home
+      - network
+      - removable-media
+
+parts:
+  amazon-ecs-init:
+plugin: nil
+    source: https://github.com/aws/amazon-ecs-init.git
+    source-type: git
+    override-pull: |
+   git clone https://github.com/aws/amazon-ecs-init.git src/github.com/aws/amazon-ecs-init
+       cd src/github.com/aws/amazon-ecs-init
+      last_committed_tag="$(git describe --tags --abbrev=0)"
+      last_committed_tag_ver="$(echo ${last_committed_tag} | sed 's/v//')"
+      last_released_tag="$(snap info $SNAPCRAFT_PROJECT_NAME | awk '$1 == "beta:" { print $2 }')"
+      # If the latest tag from the upstream project has not been released to
+      # beta, build that tag instead of master.
+      if [ "${last_committed_tag_ver}" != "${last_released_tag}" ]; then
+        git fetch
+        git checkout "${last_committed_tag}"
+      fi
+      snapcraftctl set-version "$(git describe --tags | sed 's/v//')"
+      override-build: |
+      export GOPATH=$PWD
+      cd src/github.com/aws/amazon-ecs-init
+      env CGO_ENABLED=0 GOOS=linux \
+      go build --ldflags "-s -w \
+        -X 'github.com/aws/amazon-ecs-init/version.GitCommit=$(git rev-list -1 HEAD)' \
+        -X 'github.com/aws/amazon-ecs-init/version.Version=$(git describe --tags --abbrev=0)'" \
+        -a -installsuffix cgo -o $SNAPCRAFT_PART_INSTALL/bin/amazon-ecs-init
+    build-snaps:
+      - go
+    build-packages:
+      - git
+      - sed

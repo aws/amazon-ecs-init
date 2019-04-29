@@ -1,7 +1,8 @@
 name: amazon-ecs-init
 version: git
-summary: The Amazon Elastic Container Service RPM.
-description: 
+summary:  Elastic Container Service.
+description:|  
+The Amazon Elastic Container Service RPM.
   
 adopt-info: amazon-ecs-init
 

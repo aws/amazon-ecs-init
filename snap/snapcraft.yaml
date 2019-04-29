@@ -6,7 +6,7 @@ description:
 adopt-info: amazon-ecs-init
 
 grade: stable
-confinement: strict
+confinement: classic
 
 architectures:
   - build-on: i386
@@ -21,6 +21,7 @@ apps:
       - home
       - network
       - removable-media
+      - docker
 
 parts:
   amazon-ecs-init:

@@ -31,7 +31,7 @@
 %endif
 
 Name:           ecs-init
-Version:        1.28.0
+Version:        1.28.1
 Release:        1%{?dist}
 License:        Apache 2.0
 Summary:        Amazon Elastic Container Service initialization application
@@ -254,6 +254,10 @@ fi
 %endif
 
 %changelog
+* Fri May 31 2019 Feng Xiong <fenxiong@amazon.com> - 1.28.1-1
+- Cache Agent version 1.28.1
+- Use exponential backoff when restarting agent
+
 * Thu May 9 2019 Feng Xiong <fenxiong@amazon.com> - 1.28.0-1
 - Cache Agent version 1.28.0
 

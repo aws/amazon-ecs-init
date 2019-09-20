@@ -659,7 +659,7 @@ func TestContainerLabels(t *testing.T) {
 
 func TestContainerLabelsBadData(t *testing.T) {
 	testData := `{"something":[{"test.label.1":"value1"},{"test.label.2":"value2"}]}`
-	out, err := generateLabelMap(testData)
+	_, err := generateLabelMap(testData)
 	if err == nil {
 		t.Logf("Didn't get a error while getting lables on badly formatted data, error: %s", err)
 		t.Fail()

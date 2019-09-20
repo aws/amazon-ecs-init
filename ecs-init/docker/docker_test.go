@@ -639,3 +639,29 @@ func TestStopAgent(t *testing.T) {
 		t.Error("Error should not be returned")
 	}
 }
+
+func TestContainerLabels(t *testing.T) {
+	testData := `{"test.label.1":"value1","test.label.2":"value2"}`
+	out, err := generateLabelMap(testData)
+	if err != nil {
+		t.Logf("Got an error while decoding labels, error: %s", err)
+		t.Fail()
+	}
+	if out["test.label.1"] != "value1" {
+		t.Logf("Label did not give the correct value out.")
+		t.Fail()
+	}
+	
+	for key, value := range out {
+		t.Logf("Key: %s %T | Value: %s %T", key, key, value, value)
+	}
+}
+
+func TestContainerLabelsBadData(t *testing.T) {
+	testData := `{"something":[{"test.label.1":"value1"},{"test.label.2":"value2"}]}`
+	out, err := generateLabelMap(testData)
+	if err == nil {
+		t.Logf("Didn't get a error while getting lables on badly formatted data, error: %s", err)
+		t.Fail()
+	}
+}

@@ -222,7 +222,7 @@ func (c *Client) getContainerConfig() *godocker.Config {
 		"ECS_AVAILABLE_LOGGING_DRIVERS":         `["json-file","syslog","awslogs","none"]`,
 		"ECS_ENABLE_TASK_IAM_ROLE":              "true",
 		"ECS_ENABLE_TASK_IAM_ROLE_NETWORK_HOST": "true",
-		"ECS_CONTAINER_LABELS":                  "",
+		"ECS_AGENT_LABELS":                      "",
 	}
 
 	// for al, al2 add host ssl cert directory envvar if available
@@ -245,17 +245,27 @@ func (c *Client) getContainerConfig() *godocker.Config {
 	for envKey, envValue := range envVariables {
 		env = append(env, envKey+"="+envValue)
 	}
-
-	lables, err := generateLabelMap(envVariables["ECS_CONTAINER_LABELS"])
-	if err != nil {
-		log.Errorf("Failed to decode the container labels, skipping labels. Error: %s", err)
-		lables = map[string]string{}
+	cfg := &godocker.Config{
+		Env:   env,
+		Image: config.AgentImageName,
 	}
+	setLabels(cfg, envVariables["ECS_AGENT_LABELS"])
+	return cfg
+}
 
-	return &godocker.Config{
-		Env:    env,
-		Image:  config.AgentImageName,
-		Labels: lables,
+func setLabels(cfg *godocker.Config, lablesStringRaw string) {
+	// Is there labels to add?
+	if len(lablesStringRaw) > 0 {
+		lables, err := generateLabelMap(lablesStringRaw)
+		if err != nil {
+			// Are the labels valid?
+			log.Errorf("Failed to decode the container labels, skipping labels. Error: %s", err)
+			return
+		}
+		// Stops `{}` from being valid
+		if len(lables) > 0 {
+			cfg.Labels = lables
+		}
 	}
 }
 

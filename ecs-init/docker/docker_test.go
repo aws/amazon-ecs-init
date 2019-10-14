@@ -651,9 +651,38 @@ func TestContainerLabels(t *testing.T) {
 		t.Logf("Label did not give the correct value out.")
 		t.Fail()
 	}
-	
+
 	for key, value := range out {
 		t.Logf("Key: %s %T | Value: %s %T", key, key, value, value)
+	}
+}
+
+func TestContainerLabelsNoData(t *testing.T) {
+	tests := []struct {
+		name     string
+		testData string
+	}{
+		{
+			name:     "Blank",
+			testData: "",
+		},
+		{
+			name:     "Empty JSON",
+			testData: `{}`,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := &godocker.Config{}
+
+			setLabels(cfg, test.testData)
+
+			if cfg.Labels != nil {
+				t.Logf("Labels are set but we didn't give any. Current labels: %s", cfg.Labels)
+				t.Fail()
+			}
+		})
 	}
 }
 

@@ -253,18 +253,18 @@ func (c *Client) getContainerConfig() *godocker.Config {
 	return cfg
 }
 
-func setLabels(cfg *godocker.Config, lablesStringRaw string) {
+func setLabels(cfg *godocker.Config, labelsStringRaw string) {
 	// Is there labels to add?
-	if len(lablesStringRaw) > 0 {
-		lables, err := generateLabelMap(lablesStringRaw)
+	if len(labelsStringRaw) > 0 {
+		labels, err := generateLabelMap(labelsStringRaw)
 		if err != nil {
 			// Are the labels valid?
 			log.Errorf("Failed to decode the container labels, skipping labels. Error: %s", err)
 			return
 		}
 		// Stops `{}` from being valid
-		if len(lables) > 0 {
-			cfg.Labels = lables
+		if len(labels) > 0 {
+			cfg.Labels = labels
 		}
 	}
 }

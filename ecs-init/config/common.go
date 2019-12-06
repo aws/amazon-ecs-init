@@ -42,7 +42,7 @@ const (
 	// DefaultAgentVersion is the version of the agent that will be
 	// fetched if required. This should look like v1.2.3 or an
 	// 8-character sha, as is downloadable from S3.
-	DefaultAgentVersion = "v1.24.0"
+	DefaultAgentVersion = "v1.33.0"
 
 	// AgentPartitionBucketName is the name of the paritional s3 bucket that stores the agent
 	AgentPartitionBucketName = "amazon-ecs-agent"
@@ -67,6 +67,11 @@ const (
 	// be used to override the default value used of
 	// dockerJSONLogMaxFiles for managed containers.
 	dockerJSONLogMaxFilesEnvVar = "ECS_INIT_DOCKER_LOG_FILE_NUM"
+	// GPUSupportEnvVar indicates that the AMI has support for GPU
+	GPUSupportEnvVar = "ECS_ENABLE_GPU_SUPPORT"
+
+	// DockerHostEnvVar is the environment variable that specifies the location of the Docker daemon socket.
+	DockerHostEnvVar = "DOCKER_HOST"
 )
 
 // partitionBucketRegion provides the "partitional" bucket region
@@ -125,12 +130,6 @@ func AgentDataDirectory() string {
 	return directoryPrefix + "/var/lib/ecs/data"
 }
 
-// AgentDHClientLeasesDirectory returns the location on disk where dhclient
-// leases information is tracked for ENIs attached to tasks
-func AgentDHClientLeasesDirectory() string {
-	return directoryPrefix + "/var/lib/ecs/dhclient"
-}
-
 // CacheDirectory returns the location on disk where Agent images should be cached
 func CacheDirectory() string {
 	return directoryPrefix + "/var/cache/ecs"
@@ -169,9 +168,9 @@ func DesiredImageLocatorFile() string {
 	return CacheDirectory() + "/desired-image"
 }
 
-// DockerUnixSocket returns the docker socket endpoint and whether it's read from DOCKER_HOST
+// DockerUnixSocket returns the docker socket endpoint and whether it's read from DockerHostEnvVar
 func DockerUnixSocket() (string, bool) {
-	if dockerHost := os.Getenv("DOCKER_HOST"); strings.HasPrefix(dockerHost, UnixSocketPrefix) {
+	if dockerHost := os.Getenv(DockerHostEnvVar); strings.HasPrefix(dockerHost, UnixSocketPrefix) {
 		return strings.TrimPrefix(dockerHost, UnixSocketPrefix), true
 	}
 	// return /var/run instead of /var/run/docker.sock, in case the /var/run/docker.sock is deleted and recreated
@@ -220,6 +219,23 @@ func AgentDockerLogDriverConfiguration() godocker.LogConfig {
 			"max-file": maxFiles,
 		},
 	}
+}
+
+// InstanceConfigDirectory returns the location on disk for custom instance configuration
+func InstanceConfigDirectory() string {
+	return directoryPrefix + "/var/lib/ecs"
+}
+
+// InstanceConfigFile returns the location of a file of custom environment variables
+func InstanceConfigFile() string {
+	return InstanceConfigDirectory() + "/ecs.config"
+}
+
+// RunPrivileged returns if agent should be invoked with '--privileged'. This is not
+// recommended and may be removed in future versions of amazon-ecs-init.
+func RunPrivileged() bool {
+	envVar := os.Getenv("ECS_AGENT_RUN_PRIVILEGED")
+	return envVar == "true"
 }
 
 func agentArtifactName(version string, arch string) (string, error) {

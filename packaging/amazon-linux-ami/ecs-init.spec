@@ -22,6 +22,7 @@
 %endif
 %global _cachedir %{_localstatedir}/cache
 %global bundled_agent_version %{version}
+%global no_exec_perm 644
 
 %ifarch x86_64
 %global agent_image %{SOURCE3}
@@ -31,7 +32,7 @@
 %endif
 
 Name:           ecs-init
-Version:        1.24.0
+Version:        1.33.0
 Release:        1%{?dist}
 License:        Apache 2.0
 Summary:        Amazon Elastic Container Service initialization application
@@ -55,7 +56,6 @@ Requires:       upstart
 Requires:       iptables
 Requires:       docker >= 17.06.2ce
 Requires:       procps
-Requires:       dhclient
 
 # The following 'Provides' lists the vendored dependencies bundled in
 # and used to produce the ecs-init package. As dependencies are added
@@ -160,7 +160,7 @@ required routes among its preparation steps.
 
 %install
 install -D amazon-ecs-init %{buildroot}%{_libexecdir}/amazon-ecs-init
-install -D scripts/amazon-ecs-init.1 %{buildroot}%{_mandir}/man1/amazon-ecs-init.1
+install -m %{no_exec_perm} -D scripts/amazon-ecs-init.1 %{buildroot}%{_mandir}/man1/amazon-ecs-init.1
 
 mkdir -p %{buildroot}%{_sysconfdir}/ecs
 touch %{buildroot}%{_sysconfdir}/ecs/ecs.config
@@ -170,14 +170,14 @@ touch %{buildroot}%{_sysconfdir}/ecs/ecs.config.json
 mkdir -p %{buildroot}%{_cachedir}/ecs
 echo 2 > %{buildroot}%{_cachedir}/ecs/state
 # Add a bundled ECS container agent image
-install %{agent_image} %{buildroot}%{_cachedir}/ecs/
+install -m %{no_exec_perm} %{agent_image} %{buildroot}%{_cachedir}/ecs/
 
-mkdir -p %{buildroot}%{_sharedstatedir}/ecs/{data,dhclient}
+mkdir -p %{buildroot}%{_sharedstatedir}/ecs/data
 
 %if %{with systemd}
-install -D %{SOURCE2} $RPM_BUILD_ROOT/%{_unitdir}/ecs.service
+install -m %{no_exec_perm} -D %{SOURCE2} $RPM_BUILD_ROOT/%{_unitdir}/ecs.service
 %else
-install -D %{SOURCE1} %{buildroot}%{_sysconfdir}/init/ecs.conf
+install -m %{no_exec_perm} -D %{SOURCE1} %{buildroot}%{_sysconfdir}/init/ecs.conf
 %endif
 
 %files
@@ -189,7 +189,6 @@ install -D %{SOURCE1} %{buildroot}%{_sysconfdir}/init/ecs.conf
 %{_cachedir}/ecs/%{basename:%{agent_image}}
 %{_cachedir}/ecs/state
 %dir %{_sharedstatedir}/ecs/data
-%ghost %{_sharedstatedir}/ecs/dhclient
 
 %if %{with systemd}
 %{_unitdir}/ecs.service
@@ -256,6 +255,60 @@ fi
 %endif
 
 %changelog
+* Mon Nov 11 2019 Shubham Goyal <shugy@amazon.com> - 1.33.0-1
+- Cache Agent version 1.33.0
+- Fix destination path in docker socket bind mount to match the one specified using DOCKER_HOST on Amazon Linux 2
+
+* Mon Oct 28 2019 Shubham Goyal <shugy@amazon.com> - 1.32.1-1
+- Cache Agent version 1.32.1
+- Add the ability to set Agent container's labels
+
+* Wed Sep 25 2019 Cameron Sparr <cssparr@amazon.com> - 1.32.0-1
+- Cache Agent version 1.32.0
+
+* Thu Sep 13 2019 Yajie Chu <cya@amazon.com> - 1.31.0-1
+- Cache Agent version 1.31.0
+
+* Thu Aug 15 2019 Feng Xiong <fenxiong@amazon.com> - 1.30.0-1
+- Cache Agent version 1.30.0
+
+* Mon Jul 8 2019 Shubham Goyal <shugy@amazon.com> - 1.29.1-1
+- Cache Agent version 1.29.1
+
+* Thu Jun 6 2019 Yumeng Xie <yumex@amazon.com> - 1.29.0-1
+- Cache Agent version 1.29.0
+
+* Fri May 31 2019 Feng Xiong <fenxiong@amazon.com> - 1.28.1-2
+- Cache Agent version 1.28.1
+- Use exponential backoff when restarting agent
+
+* Thu May 9 2019 Feng Xiong <fenxiong@amazon.com> - 1.28.0-1
+- Cache Agent version 1.28.0
+
+* Thu Mar 28 2019 Shaobo Han <obo@amazon.com> - 1.27.0-1
+- Cache Agent version 1.27.0
+
+* Thu Mar 21 2019 Derek Petersen <petderek@amazon.com> - 1.26.1
+- Cache Agent version 1.26.1
+
+* Thu Feb 28 2019 Derek Petersen <petderek@amazon.com> - 1.26.0
+- Cache Agent version 1.26.0
+- Add support for running iptables within agent container
+
+* Fri Feb 15 2019 Ray Allan <fierlion@amazon.com> - 1.25.3-1
+- Cache Agent version 1.25.3
+
+* Thu Jan 31 2019 Shaobo Han <obo@amazon.com> - 1.25.2-1
+- Cache Agent version 1.25.2
+
+* Fri Jan 25 2019 Adnan Khan <adnkha@amazon.com> - 1.25.1-1
+- Cache Agent version 1.25.1
+- Update ecr models for private link support
+
+* Thu Jan 17 2019 Eric Sun <yuzhusun@amazon.com> - 1.25.0-1
+- Cache Agent version 1.25.0
+- Add Nvidia GPU support for p2 and p3 instances
+
 * Fri Jan 4 2019 Eric Sun <yuzhusun@amazon.com> - 1.24.0-1
 - Cache Agent version 1.24.0
 

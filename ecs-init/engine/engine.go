@@ -17,12 +17,17 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
+	"time"
 
+	"github.com/aws/amazon-ecs-init/ecs-init/backoff"
 	"github.com/aws/amazon-ecs-init/ecs-init/cache"
+	"github.com/aws/amazon-ecs-init/ecs-init/config"
 	"github.com/aws/amazon-ecs-init/ecs-init/docker"
 	"github.com/aws/amazon-ecs-init/ecs-init/exec"
 	"github.com/aws/amazon-ecs-init/ecs-init/exec/iptables"
 	"github.com/aws/amazon-ecs-init/ecs-init/exec/sysctl"
+	"github.com/aws/amazon-ecs-init/ecs-init/gpu"
 
 	log "github.com/cihub/seelog"
 )
@@ -31,6 +36,11 @@ const (
 	terminalSuccessAgentExitCode = 0
 	terminalFailureAgentExitCode = 5
 	upgradeAgentExitCode         = 42
+	serviceStartMinRetryTime     = time.Millisecond * 500
+	serviceStartMaxRetryTime     = time.Second * 15
+	serviceStartRetryJitter      = 0.10
+	serviceStartRetryMultiplier  = 2.0
+	serviceStartMaxRetries       = math.MaxInt64 // essentially retry forever
 )
 
 // Engine contains methods invoked when ecs-init is run
@@ -39,6 +49,7 @@ type Engine struct {
 	docker                dockerClient
 	loopbackRouting       loopbackRouting
 	credentialsProxyRoute credentialsProxyRoute
+	nvidiaGPUManager      gpu.GPUManager
 }
 
 // New creates an instance of Engine
@@ -65,6 +76,7 @@ func New() (*Engine, error) {
 		docker:                docker,
 		loopbackRouting:       loopbackRouting,
 		credentialsProxyRoute: credentialsProxyRoute,
+		nvidiaGPUManager:      gpu.NewNvidiaGPUManager(),
 	}, nil
 }
 
@@ -72,6 +84,16 @@ func New() (*Engine, error) {
 // to handle credentials requests from containers by rerouting these requests to
 // to the ECS Agent's credentials endpoint
 func (e *Engine) PreStart() error {
+	envVariables := e.docker.LoadEnvVars()
+	if val, ok := envVariables[config.GPUSupportEnvVar]; ok {
+		if val == "true" {
+			err := e.nvidiaGPUManager.Setup()
+			if err != nil {
+				log.Errorf("Nvidia GPU Manager: %v", err)
+				return engineError("Nvidia GPU Manager", err)
+			}
+		}
+	}
 	// Enable use of loopback addresses for local routing purposes
 	err := e.loopbackRouting.Enable()
 	if err != nil {
@@ -154,7 +176,9 @@ func (e *Engine) load(image io.ReadCloser, err error) error {
 // StartSupervised starts the ECS Agent and ensures it stays running, except for terminal errors (indicated by an agent exit code of 5)
 func (e *Engine) StartSupervised() error {
 	agentExitCode := -1
-	for agentExitCode != terminalSuccessAgentExitCode && agentExitCode != terminalFailureAgentExitCode {
+	retryBackoff := backoff.NewBackoff(serviceStartMinRetryTime, serviceStartMaxRetryTime,
+		serviceStartRetryJitter, serviceStartRetryMultiplier, serviceStartMaxRetries)
+	for {
 		err := e.docker.RemoveExistingAgentContainer()
 		if err != nil {
 			return engineError("could not remove existing Agent container", err)
@@ -166,15 +190,24 @@ func (e *Engine) StartSupervised() error {
 			return engineError("could not start Agent", err)
 		}
 		log.Infof("Agent exited with code %d", agentExitCode)
-		if agentExitCode == upgradeAgentExitCode {
+
+		switch agentExitCode {
+		case upgradeAgentExitCode:
 			err = e.upgradeAgent()
 			if err != nil {
 				log.Error("could not upgrade agent", err)
+			} else {
+				// continuing here because a successful upgrade doesn't need to backoff retries
+				continue
 			}
+		case terminalFailureAgentExitCode:
+			return errors.New("agent exited with terminal exit code")
+		case terminalSuccessAgentExitCode:
+			return nil
 		}
-	}
-	if agentExitCode == terminalFailureAgentExitCode {
-		return errors.New("agent exited with terminal exit code")
+		d := retryBackoff.Duration()
+		log.Warnf("ECS Agent failed to start, retrying in %s", d)
+		time.Sleep(d)
 	}
 	return nil
 }

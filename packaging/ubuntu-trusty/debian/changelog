@@ -1,3 +1,105 @@
+amazon-ecs-init (1.33.0-1) trusty; urgency=medium
+
+  * Cache Agent version 1.33.0
+  * Fix destination path in docker socket bind mount to match the one specified using DOCKER_HOST on Amazon Linux 2
+
+  -- Shubham Goyal <shugy@amazon.com>  Mon, 11 Nov 2019 11:05:00 -0800
+
+amazon-ecs-init (1.32.1-1) trusty; urgency=medium
+
+  * Cache Agent version 1.32.1
+  * Add the ability to set Agent container's labels
+
+  -- Shubham Goyal <shugy@amazon.com>  Mon, 28 Oct 2019 02:32:00 -0800
+
+amazon-ecs-init (1.32.0-1) trusty; urgency=medium
+
+  * Cache Agent version 1.32.0
+
+  -- Cameron Sparr <cssparr@amazon.com> Wed, 25 Sep 2019 10:00:00 -0800
+
+amazon-ecs-init (1.31.0-1) trusty; urgency=medium
+     
+  * Cache Agent version 1.31.0
+     
+  -- Yajie Chu <cya@amazon.com> Fri, 13 Sep 2019 10:00:00 -0800
+
+amazon-ecs-init (1.30.0-1) trusty; urgency=medium
+
+  * Cache Agent version 1.30.0
+
+  -- Feng Xiong <fenxiong@amazon.com> Thu, 15 Aug 2019 10:00:00 -0800
+
+amazon-ecs-init (1.29.1-1) trusty; urgency=medium
+
+  * Cache Agent version 1.29.1
+
+  -- Shubham Goyal <shugy@amazon.com>  Mon, 8 Jul 2019 11:06:00 -0800
+
+amazon-ecs-init (1.29.0-1) trusty; urgency=medium
+
+  * Cache Agent version 1.29.0
+
+  -- Yumeng Xie <yumex@amazon.com>  Thu, 6 Jun 2019 14:47:00 -0800
+
+amazon-ecs-init (1.28.1-2) trusty; urgency=medium
+
+   * Cache Agent version 1.28.1
+   * Use exponential backoff when restarting agent
+
+   -- Feng Xiong <fenxiong@amazon.com> Fri, 31 May 2019 10:00:00 -0800
+
+amazon-ecs-init (1.28.0-1) trusty; urgency=medium
+
+   * Cache Agent version 1.28.0
+
+   -- Feng Xiong <fenxiong@amazon.com> Thu, 9 May 2019 10:00:00 -0800
+
+amazon-ecs-init (1.27.0-1) trusty; urgency=medium
+
+   * Cache Agent version 1.27.0
+
+   -- Shaobo Han <obo@amazon.com> Thu, 28 Mar 2019 14:00:00 -0800
+   
+amazon-ecs-init (1.26.1-1) trusty; urgency=medium
+
+   * Cache Agent version 1.26.1
+
+   -- Derek Petersen <petderek@amazon.com> Thu, 21 Mar 2019 13:30:00 -0800
+
+amazon-ecs-init (1.26.0-1) trusty; urgency=medium
+
+   * Cache Agent version 1.26.0
+   * Add support for running iptables within agent container
+
+   -- Derek Petersen <petderek@amazon.com> Thu, 28 Feb 2019 13:30:00 -0800
+
+amazon-ecs-init (1.25.3-1) trusty; urgency=medium
+
+   * Cache Agent version 1.25.3
+
+   -- Ray Allan <fierlion@amazon.com> Fri, 15 Feb 2019 11:30:00 -0800
+
+amazon-ecs-init (1.25.2-1) trusty; urgency=medium
+
+   * Cache Agent version 1.25.2
+
+   -- Shaobo Han <obo@amazon.com>  Thu, 31 Jan 2019 11:53:00 -0800
+
+amazon-ecs-init (1.25.1-1) trusty; urgency=medium
+
+   * Cache Agent version 1.25.1
+   * Update ecr models for private link support
+
+   -- Adnan Khan <adnkha@amazon.com>  Fri, 25 Jan 2019 20:39:00 -0800
+
+amazon-ecs-init (1.25.0-1) trusty; urgency=medium
+
+   * Cache Agent version 1.25.0
+   * Add Nvidia GPU support for p2 and p3 instances
+
+   -- Eric Sun <yuzhusun@amazon.com>  Thu, 17 Jan 2018 10:32:18 -0800
+
 amazon-ecs-init (1.24.0-1) trusty; urgency=medium
 
   * Cache Agent version 1.24.0

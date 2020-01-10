@@ -33,7 +33,6 @@ import (
 )
 
 const (
-	terminalSuccessAgentExitCode  = 0
 	containerFailureAgentExitCode = 2
 	terminalFailureAgentExitCode  = 5
 	upgradeAgentExitCode          = 42
@@ -181,7 +180,15 @@ func (e *Engine) StartSupervised() error {
 	retryBackoff := backoff.NewBackoff(serviceStartMinRetryTime, serviceStartMaxRetryTime,
 		serviceStartRetryJitter, serviceStartRetryMultiplier, serviceStartMaxRetries)
 	for {
-		err := e.docker.RemoveExistingAgentContainer()
+		// ecs-init should survive dockerd going down
+		err := e.docker.Ping()
+		if err != nil {
+			d := retryBackoff.Duration()
+			log.Warnf("Unable to reach dockerd; retrying in %s", d)
+			time.Sleep(d)
+			continue
+		}
+		err = e.docker.RemoveExistingAgentContainer()
 		if err != nil {
 			return engineError("could not remove existing Agent container", err)
 		}
@@ -209,11 +216,9 @@ func (e *Engine) StartSupervised() error {
 			log.Infof("<====end %s lines of the failed agent container logs\n", failedContainerLogWindowSize)
 		case terminalFailureAgentExitCode:
 			return errors.New("agent exited with terminal exit code")
-		case terminalSuccessAgentExitCode:
-			return nil
 		}
 		d := retryBackoff.Duration()
-		log.Warnf("ECS Agent failed to start, retrying in %s", d)
+		log.Warnf("ECS Agent container failed to start; retrying in %s", d)
 		time.Sleep(d)
 	}
 }

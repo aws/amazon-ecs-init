@@ -222,7 +222,7 @@ func (c *Client) GetContainerLogTail(logWindowSize string) string {
 	containerToLog, _ := c.findAgentContainer()
 	if containerToLog == "" {
 		log.Info("No existing container to take logs from.")
-                return ""
+		return ""
 	}
 	// we want to capture some logs from our removed containers in case of failure
 	var containerLogBuf bytes.Buffer
@@ -436,6 +436,12 @@ var MatchFilePatternForGPU = FilePatternMatchForGPU
 
 func FilePatternMatchForGPU(pattern string) ([]string, error) {
 	return filepath.Glob(pattern)
+}
+
+// Ping checks for availability of dockerd
+func (c *Client) Ping() error {
+	err := c.docker.Ping()
+	return err
 }
 
 // StopAgent stops the Agent in docker if one is running

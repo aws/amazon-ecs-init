@@ -1,4 +1,4 @@
-// Copyright 2015-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2015-2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"). You may
 // not use this file except in compliance with the License. A copy of the
@@ -49,6 +49,7 @@ func (m *MockExec) EXPECT() *MockExecMockRecorder {
 
 // LookPath mocks base method
 func (m *MockExec) LookPath(file string) (string, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LookPath", file)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
@@ -57,11 +58,13 @@ func (m *MockExec) LookPath(file string) (string, error) {
 
 // LookPath indicates an expected call of LookPath
 func (mr *MockExecMockRecorder) LookPath(file interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LookPath", reflect.TypeOf((*MockExec)(nil).LookPath), file)
 }
 
 // Command mocks base method
 func (m *MockExec) Command(name string, arg ...string) cmd.Cmd {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{name}
 	for _, a := range arg {
 		varargs = append(varargs, a)
@@ -73,6 +76,7 @@ func (m *MockExec) Command(name string, arg ...string) cmd.Cmd {
 
 // Command indicates an expected call of Command
 func (mr *MockExecMockRecorder) Command(name interface{}, arg ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{name}, arg...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Command", reflect.TypeOf((*MockExec)(nil).Command), varargs...)
 }

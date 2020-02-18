@@ -225,7 +225,7 @@ func (c *Client) GetContainerLogTail(logWindowSize string) string {
 	containerToLog, _ := c.findAgentContainer()
 	if containerToLog == "" {
 		log.Info("No existing container to take logs from.")
-                return ""
+		return ""
 	}
 	// we want to capture some logs from our removed containers in case of failure
 	var containerLogBuf bytes.Buffer
@@ -370,6 +370,10 @@ func (c *Client) getHostConfig(envVarsFromFiles map[string]string) *godocker.Hos
 		config.CgroupMountpoint() + ":" + DefaultCgroupMountpoint,
 		// bind mount instance config dir
 		config.InstanceConfigDirectory() + ":" + config.InstanceConfigDirectory(),
+	}
+	// only add update download dir if it is not the cache directory (the default setting)
+	if config.UpdateDownloadDir() != config.CacheDirectory() {
+		binds = append(binds, config.UpdateDownloadDir()+":"+config.UpdateDownloadDir())
 	}
 
 	// for al, al2 add host ssl cert directory mounts

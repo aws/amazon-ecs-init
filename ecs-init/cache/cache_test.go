@@ -479,3 +479,25 @@ func TestLoadDesiredAgent(t *testing.T) {
 
 	d.LoadDesiredAgent()
 }
+
+func TestLoadDesiredAgent_WithUpdateDownloadDirEnvVar(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	os.Setenv("ECS_UPDATE_DOWNLOAD_DIR", "/tmp")
+	defer os.Unsetenv("ECS_UPDATE_DOWNLOAD_DIR")
+
+	desiredImage := "my-new-agent-image"
+
+	mockFS := NewMockfileSystem(mockCtrl)
+
+	mockFS.EXPECT().Open(config.DesiredImageLocatorFile()).Return(ioutil.NopCloser(bytes.NewBufferString(desiredImage+"\n")), nil)
+	mockFS.EXPECT().Base(gomock.Any()).Return(desiredImage + "\n")
+	mockFS.EXPECT().Open("/tmp/" + desiredImage)
+
+	d := &Downloader{
+		fs: mockFS,
+	}
+
+	d.LoadDesiredAgent()
+}

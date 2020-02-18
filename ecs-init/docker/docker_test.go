@@ -23,6 +23,7 @@ import (
 	godocker "github.com/fsouza/go-dockerclient"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // expectedAgentBinds is the total number of agent host config binds.
@@ -748,4 +749,78 @@ func TestGetDockerSocketBind(t *testing.T) {
 			assert.Equal(t, tc.expectedBind, bind)
 		})
 	}
+}
+
+func TestGetHostConfig(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockFS := NewMockfileSystem(mockCtrl)
+	mockDocker := NewMockdockerclient(mockCtrl)
+
+	mockFS.EXPECT().ReadFile(config.InstanceConfigFile()).Return(nil, errors.New("not found")).AnyTimes()
+	mockFS.EXPECT().ReadFile(config.AgentConfigFile()).Return(nil, errors.New("test error")).AnyTimes()
+
+	client := &Client{
+		docker: mockDocker,
+		fs:     mockFS,
+	}
+
+	envVarsFromFiles := client.LoadEnvVars()
+	c := client.getHostConfig(envVarsFromFiles)
+	require.Contains(t, c.Binds, "/var/run:/var/run")
+	require.Contains(t, c.Binds, "/var/log/ecs:/log")
+	require.Contains(t, c.Binds, "/var/lib/ecs/data:/data")
+	require.Contains(t, c.Binds, "/etc/ecs:/etc/ecs")
+	require.Contains(t, c.Binds, "/var/cache/ecs:/var/cache/ecs")
+	require.Contains(t, c.Binds, "/cgroup:/sys/fs/cgroup")
+	require.Contains(t, c.Binds, "/var/lib/ecs:/var/lib/ecs")
+	require.Contains(t, c.Binds, "/run/docker/plugins:/run/docker/plugins:ro")
+	require.Contains(t, c.Binds, "/etc/docker/plugins:/etc/docker/plugins:ro")
+	require.Contains(t, c.Binds, "/usr/lib/docker/plugins:/usr/lib/docker/plugins:ro")
+	require.Contains(t, c.Binds, "/proc:/host/proc:ro")
+	require.Contains(t, c.Binds, "/usr/lib:/usr/lib:ro")
+	require.Contains(t, c.Binds, "/lib:/lib:ro")
+	require.Contains(t, c.Binds, "/usr/lib64:/usr/lib64:ro")
+	require.Contains(t, c.Binds, "/lib64:/lib64:ro")
+	require.Contains(t, c.Binds, "/sbin:/host/sbin:ro")
+}
+
+func TestGetHostConfig_WithUpdateDownloadDirEnvVar(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	os.Setenv("ECS_UPDATE_DOWNLOAD_DIR", "/updateDownloadDir")
+	defer os.Unsetenv("ECS_UPDATE_DOWNLOAD_DIR")
+
+	mockFS := NewMockfileSystem(mockCtrl)
+	mockDocker := NewMockdockerclient(mockCtrl)
+
+	mockFS.EXPECT().ReadFile(config.InstanceConfigFile()).Return(nil, errors.New("not found")).AnyTimes()
+	mockFS.EXPECT().ReadFile(config.AgentConfigFile()).Return(nil, errors.New("test error")).AnyTimes()
+
+	client := &Client{
+		docker: mockDocker,
+		fs:     mockFS,
+	}
+
+	envVarsFromFiles := client.LoadEnvVars()
+	c := client.getHostConfig(envVarsFromFiles)
+	require.Contains(t, c.Binds, "/var/run:/var/run")
+	require.Contains(t, c.Binds, "/var/log/ecs:/log")
+	require.Contains(t, c.Binds, "/var/lib/ecs/data:/data")
+	require.Contains(t, c.Binds, "/etc/ecs:/etc/ecs")
+	require.Contains(t, c.Binds, "/var/cache/ecs:/var/cache/ecs")
+	require.Contains(t, c.Binds, "/cgroup:/sys/fs/cgroup")
+	require.Contains(t, c.Binds, "/var/lib/ecs:/var/lib/ecs")
+	require.Contains(t, c.Binds, "/run/docker/plugins:/run/docker/plugins:ro")
+	require.Contains(t, c.Binds, "/etc/docker/plugins:/etc/docker/plugins:ro")
+	require.Contains(t, c.Binds, "/usr/lib/docker/plugins:/usr/lib/docker/plugins:ro")
+	require.Contains(t, c.Binds, "/proc:/host/proc:ro")
+	require.Contains(t, c.Binds, "/usr/lib:/usr/lib:ro")
+	require.Contains(t, c.Binds, "/lib:/lib:ro")
+	require.Contains(t, c.Binds, "/usr/lib64:/usr/lib64:ro")
+	require.Contains(t, c.Binds, "/lib64:/lib64:ro")
+	require.Contains(t, c.Binds, "/sbin:/host/sbin:ro")
+	require.Contains(t, c.Binds, "/updateDownloadDir:/updateDownloadDir")
 }

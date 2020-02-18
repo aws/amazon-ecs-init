@@ -318,6 +318,6 @@ func (d *Downloader) getDesiredImageFile() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	desiredImageFile := strings.TrimSpace(config.CacheDirectory() + "/" + d.fs.Base(desiredImageString))
+	desiredImageFile := strings.TrimSpace(config.UpdateDownloadDir() + "/" + d.fs.Base(desiredImageString))
 	return desiredImageFile, nil
 }

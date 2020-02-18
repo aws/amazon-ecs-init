@@ -17,6 +17,8 @@ import (
 	"fmt"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestDockerUnixSocketWithoutDockerHost(t *testing.T) {
@@ -203,4 +205,26 @@ func TestAgentPrivilegedNotConfigured(t *testing.T) {
 			t.Errorf("Agent was expected to be running without privileged mode. Testcase (%s)", test)
 		}
 	}
+}
+
+func TestUpdateDownloadDir_WithEnvVar(t *testing.T) {
+	os.Setenv("ECS_UPDATE_DOWNLOAD_DIR", "/tmp")
+	defer os.Unsetenv("ECS_UPDATE_DOWNLOAD_DIR")
+
+	require.Equal(t, "/tmp", UpdateDownloadDir())
+}
+
+func TestUpdateDownloadDir_NoEnvVar(t *testing.T) {
+	require.Equal(t, "/var/cache/ecs", UpdateDownloadDir())
+}
+
+func TestDesiredImageLocatorFile_WithEnvVar(t *testing.T) {
+	os.Setenv("ECS_UPDATE_DOWNLOAD_DIR", "/foo")
+	defer os.Unsetenv("ECS_UPDATE_DOWNLOAD_DIR")
+
+	require.Equal(t, "/foo/desired-image", DesiredImageLocatorFile())
+}
+
+func TestDesiredImageLocatorFile_NoEnvVar(t *testing.T) {
+	require.Equal(t, "/var/cache/ecs/desired-image", DesiredImageLocatorFile())
 }

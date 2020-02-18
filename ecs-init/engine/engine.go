@@ -197,7 +197,7 @@ func (e *Engine) StartSupervised() error {
 		case upgradeAgentExitCode:
 			err = e.upgradeAgent()
 			if err != nil {
-				log.Error("could not upgrade agent", err)
+				log.Error("could not upgrade agent: ", err)
 			} else {
 				// continuing here because a successful upgrade doesn't need to backoff retries
 				continue

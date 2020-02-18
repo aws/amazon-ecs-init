@@ -135,6 +135,14 @@ func CacheDirectory() string {
 	return directoryPrefix + "/var/cache/ecs"
 }
 
+// UpdateDownloadDir returns to location of the agent update download dir
+func UpdateDownloadDir() string {
+	if downloadDir := os.Getenv("ECS_UPDATE_DOWNLOAD_DIR"); downloadDir != "" {
+		return downloadDir
+	}
+	return CacheDirectory()
+}
+
 // CacheState returns the location on disk where cache state is stored
 func CacheState() string {
 	return CacheDirectory() + "/state"
@@ -165,7 +173,7 @@ func AgentRemoteTarballMD5Key() (string, error) {
 
 // DesiredImageLocatorFile returns the location on disk of a well-known file describing an Agent image to load
 func DesiredImageLocatorFile() string {
-	return CacheDirectory() + "/desired-image"
+	return UpdateDownloadDir() + "/desired-image"
 }
 
 // DockerUnixSocket returns the docker socket endpoint and whether it's read from DockerHostEnvVar

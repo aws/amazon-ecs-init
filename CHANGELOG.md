@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.37.0-1
+* Cache Agent version 1.37.0
+
 ## 1.36.2-1
 * Cache Agent version 1.36.2
 * update sbin mount point to avoid conflict with Docker >= 19.03.5

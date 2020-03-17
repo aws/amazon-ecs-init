@@ -92,18 +92,13 @@ func New() (*Engine, error) {
 // to handle credentials requests from containers by rerouting these requests to
 // to the ECS Agent's credentials endpoint
 func (e *Engine) PreStart() error {
-	envVariables := e.docker.LoadEnvVars()
-	if val, ok := envVariables[config.GPUSupportEnvVar]; ok {
-		if val == "true" {
-			err := e.nvidiaGPUManager.Setup()
-			if err != nil {
-				log.Errorf("Nvidia GPU Manager: %v", err)
-				return engineError("Nvidia GPU Manager", err)
-			}
-		}
+	// setup gpu if necessary
+	err := e.PreStartGPU()
+	if err != nil {
+		return err
 	}
 	// Enable use of loopback addresses for local routing purposes
-	err := e.loopbackRouting.Enable()
+	err = e.loopbackRouting.Enable()
 	if err != nil {
 		return engineError("could not enable loopback routing", err)
 	}
@@ -144,6 +139,21 @@ func (e *Engine) PreStart() error {
 	default:
 		return errors.New("could not handle cache state")
 	}
+}
+
+// PreStartGPU sets up the nvidia gpu manager if it's enabled.
+func (e *Engine) PreStartGPU() error {
+	envVariables := e.docker.LoadEnvVars()
+	if val, ok := envVariables[config.GPUSupportEnvVar]; ok {
+		if val == "true" {
+			err := e.nvidiaGPUManager.Setup()
+			if err != nil {
+				log.Errorf("Nvidia GPU Manager: %v", err)
+				return engineError("Nvidia GPU Manager", err)
+			}
+		}
+	}
+	return nil
 }
 
 // ReloadCache reloads the cached image of the ECS Agent into Docker

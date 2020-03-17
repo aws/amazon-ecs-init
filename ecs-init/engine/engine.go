@@ -47,11 +47,12 @@ const (
 
 // Engine contains methods invoked when ecs-init is run
 type Engine struct {
-	downloader            downloader
-	docker                dockerClient
-	loopbackRouting       loopbackRouting
-	credentialsProxyRoute credentialsProxyRoute
-	nvidiaGPUManager      gpu.GPUManager
+	downloader               downloader
+	docker                   dockerClient
+	loopbackRouting          loopbackRouting
+	credentialsProxyRoute    credentialsProxyRoute
+	ipv6RouterAdvertisements ipv6RouterAdvertisements
+	nvidiaGPUManager         gpu.GPUManager
 }
 
 // New creates an instance of Engine
@@ -69,16 +70,21 @@ func New() (*Engine, error) {
 	if err != nil {
 		return nil, err
 	}
+	ipv6RouterAdvertisements, err := sysctl.NewIpv6RouterAdvertisements(cmdExec)
+	if err != nil {
+		return nil, err
+	}
 	credentialsProxyRoute, err := iptables.NewNetfilterRoute(cmdExec)
 	if err != nil {
 		return nil, err
 	}
 	return &Engine{
-		downloader:            downloader,
-		docker:                docker,
-		loopbackRouting:       loopbackRouting,
-		credentialsProxyRoute: credentialsProxyRoute,
-		nvidiaGPUManager:      gpu.NewNvidiaGPUManager(),
+		downloader:               downloader,
+		docker:                   docker,
+		loopbackRouting:          loopbackRouting,
+		credentialsProxyRoute:    credentialsProxyRoute,
+		ipv6RouterAdvertisements: ipv6RouterAdvertisements,
+		nvidiaGPUManager:         gpu.NewNvidiaGPUManager(),
 	}, nil
 }
 
@@ -100,6 +106,11 @@ func (e *Engine) PreStart() error {
 	err := e.loopbackRouting.Enable()
 	if err != nil {
 		return engineError("could not enable loopback routing", err)
+	}
+	// Disable ipv6 router advertisements
+	err = e.ipv6RouterAdvertisements.Disable()
+	if err != nil {
+		return engineError("could not disable ipv6 router advertisements", err)
 	}
 	// Add the rerouting netfilter rule for credentials endpoint
 	err = e.credentialsProxyRoute.Create()

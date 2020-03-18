@@ -89,6 +89,8 @@ get-deps:
 	go get golang.org/x/tools/cover
 	go get golang.org/x/tools/cmd/cover
 	go get golang.org/x/tools/cmd/goimports
+	go get github.com/fzipp/gocyclo
+	go get github.com/golang/mock/mockgen
 
 clean:
 	-rm -f ecs-init.spec

@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.39.0-1
+* Cache Agent version 1.39.0
+
 ## 1.38.0-1
 * Cache Agent version 1.38.0
 * Adds support for ECS volume plugin

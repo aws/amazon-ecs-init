@@ -32,7 +32,7 @@
 %endif
 
 Name:           ecs-init
-Version:        1.38.0
+Version:        1.39.0
 Release:        1%{?dist}
 License:        Apache 2.0
 Summary:        Amazon Elastic Container Service initialization application
@@ -278,6 +278,9 @@ fi
 %endif
 
 %changelog
+* Thu Apr 02 2020 Yunhee Lee <yhlee@amazon.com> - 1.39.0-1
+- Cache Agent version 1.39.0
+
 * Thu Mar 19 2020 Sharanya Devaraj <sharanyd@amazon.com> - 1.38.0-1
 - Cache Agent version 1.38.0
 - Adds support for ECS volume plugin

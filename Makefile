@@ -108,6 +108,26 @@ ubuntu-trusty:
 	cp README.md BUILDROOT
 	cd BUILDROOT && debuild $(shell [ "$(DEB_SIGN)" -ne "0" ] || echo "-uc -us")
 
+# ubuntu-focal:
+# 	cp packaging/ubuntu-focal/ecs.conf ecs.conf
+# 	tar -czf ./amazon-ecs-init_${VERSION}.orig.tar.gz ecs-init ecs.conf scripts README.md
+# 	mkdir -p BUILDROOT
+# 	cp -r packaging/ubuntu-focal/debian BUILDROOT/debian
+# 	cp -r ecs-init BUILDROOT
+# 	cp packaging/ubuntu-focal/ecs.conf BUILDROOT
+# 	cp -r scripts BUILDROOT
+# 	cp README.md BUILDROOT
+# 	cd BUILDROOT && debuild $(shell [ "$(DEB_SIGN)" -ne "0" ] || echo "-uc -us")
+
+ubuntu-focal:
+	tar -czf ./amazon-ecs-init_${VERSION}.orig.tar.gz ecs-init scripts README.md
+	mkdir -p BUILDROOT
+	cp -r packaging/ubuntu-focal/debian BUILDROOT/debian
+	cp -r ecs-init BUILDROOT
+	cp -r scripts BUILDROOT
+	cp README.md BUILDROOT
+	cd BUILDROOT && debuild $(shell [ "$(DEB_SIGN)" -ne "0" ] || echo "-uc -us")
+
 get-deps:
 	go get golang.org/x/tools/cover
 	go get golang.org/x/tools/cmd/cover

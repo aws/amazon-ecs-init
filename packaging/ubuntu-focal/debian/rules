@@ -7,8 +7,8 @@ export DH_VERBOSE=1
 # build with PIE hardening flag https://wiki.archlinux.org/index.php/Arch_package_guidelines/Security
 export GOFLAGS=-buildmode=pie
 # not sure if needed
-#export CGO_CPPFLAGS=-D_FORTIFY_SOURCE=2
-#export CGO_LDFLAGS=-Wl,-z,relro,-z,now
+export CGO_CPPFLAGS=-D_FORTIFY_SOURCE=2
+export CGO_LDFLAGS=-Wl,-z,relro,-z,now
 
 %:
 	dh $@

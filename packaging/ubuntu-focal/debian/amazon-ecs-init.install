@@ -1,1 +1,2 @@
 amazon-ecs-init usr/sbin/
+amazon-ecs-volume-plugin usr/sbin/

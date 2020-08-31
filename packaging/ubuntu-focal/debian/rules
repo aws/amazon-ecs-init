@@ -4,17 +4,15 @@
 # Uncomment this to turn on verbose mode.
 export DH_VERBOSE=1
 
-# build with PIE hardening flag https://wiki.archlinux.org/index.php/Arch_package_guidelines/Security
-export GOFLAGS=-buildmode=pie
-# not sure if needed
-export CGO_CPPFLAGS=-D_FORTIFY_SOURCE=2
-export CGO_LDFLAGS=-Wl,-z,relro,-z,now
-
 %:
 	dh $@
 
+override_dh_installsystemd:
+	dh_installsystemd --name=ecs
+	dh_installsystemd --name=amazon-ecs-volume-plugin
+
 build:
-	PATH=/usr/lib/go-1.13/bin:$(PATH) ./scripts/gobuild.sh ubuntu
+	PATH=/usr/lib/go-1.13/bin:$(PATH) ./scripts/gobuild.sh al2
 
 clean:
 	dh $@

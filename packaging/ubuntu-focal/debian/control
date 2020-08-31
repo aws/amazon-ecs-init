@@ -1,8 +1,8 @@
 Source: amazon-ecs-init
 Section: misc
 Priority: optional
-Maintainer: Samuel Karp <skarp@amazon.com>
-Build-Depends: debhelper-compat (= 12), golang-1.13 (>= 1.13)
+Maintainer: ecs-agent-dev <ecs-agent-dev@amazon.com>
+Build-Depends: debhelper-compat (= 12), golang-go (= 2:1.13~1ubuntu2)
 Standards-Version: 4.5.0
 Homepage: https://aws.amazon.com/ecs
 Vcs-Git: git://github.com/aws/amazon-ecs-init.git

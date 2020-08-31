@@ -1,7 +1,15 @@
-This package requires Go 1.7 which is only availible for Ubuntu Trusty from PPA.
+Steps to build and install package:
 
-  * Install Go 1.7 (golang-1.7) from ppa:gophers/archive, see
-    https://launchpad.net/%7Egophers/+archive/ubuntu/archive?field.series_filter=trusty
+1. Install needed packages
+    sudo apt-get update
+    sudo apt-get install -y debhelper golang-1.13 git devscripts
 
-      add-apt-repository ppa:gophers/archive
-      apt-get install golang-1.7
+2. Install docker https://docs.docker.com/engine/install/ubuntu/
+
+3. Install amazon-efs-utils https://docs.aws.amazon.com/efs/latest/ug/installing-other-distro.html
+
+4. Build the package by running
+    sudo DEB_SIGN=0 make clean ubuntu-focal
+
+5. Install the package with
+    sudo dpkg -i pathToDEBFile

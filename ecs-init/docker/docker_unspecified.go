@@ -20,6 +20,10 @@ import (
 	godocker "github.com/fsouza/go-dockerclient"
 )
 
+const (
+	pidModeHost = "host"
+)
+
 // getPlatformSpecificEnvVariables gets a map of environment variable key-value
 // pairs to set in the Agent's container config
 // The ECS_ENABLE_TASK_ENI flag is only set for Amazon Linux AMI
@@ -53,6 +57,7 @@ func createHostConfig(binds []string) *godocker.HostConfig {
 		UsernsMode:  usernsMode,
 		CapAdd:      []string{CapNetAdmin, CapSysAdmin},
 		Init:        true,
+		PidMode:     pidModeHost,
 	}
 
 	if config.RunPrivileged() {

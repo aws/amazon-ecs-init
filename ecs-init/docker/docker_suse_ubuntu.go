@@ -34,5 +34,6 @@ func createHostConfig(binds []string) *godocker.HostConfig {
 		Binds:       binds,
 		NetworkMode: networkMode,
 		UsernsMode:  usernsMode,
+		PidMode:     pidModeHost,
 	}
 }

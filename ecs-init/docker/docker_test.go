@@ -301,6 +301,7 @@ func validateCommonCreateContainerOptions(opts godocker.CreateContainerOptions, 
 	if hostCfg.Init != true {
 		t.Error("Incorrect host config. Expected Init to be true")
 	}
+	assert.Equal(t, pidModeHost, hostCfg.PidMode)
 }
 
 func expectKey(key string, input map[string]struct{}, t *testing.T) {

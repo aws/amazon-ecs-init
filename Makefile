@@ -116,6 +116,22 @@ get-deps:
 	go get github.com/golang/mock/mockgen
 	go get honnef.co/go/tools/cmd/staticcheck
 
+PLATFORM:=$(shell uname -s)
+ifeq (${PLATFORM},Linux)
+                dep_arch=linux-386
+        else ifeq (${PLATFORM},Darwin)
+                dep_arch=darwin-386
+        endif
+
+DEP_VERSION=v0.5.0
+.PHONY: get-dep
+get-dep: bin/dep
+
+bin/dep:
+	mkdir -p ./bin
+	curl -L https://github.com/golang/dep/releases/download/$(DEP_VERSION)/dep-${dep_arch} -o ./bin/dep
+	chmod +x ./bin/dep
+
 clean:
 	-rm -f ecs-init.spec
 	-rm -f ecs.conf

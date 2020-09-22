@@ -21,6 +21,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/aws/amazon-ecs-init/ecs-init/cache"
+	"github.com/aws/amazon-ecs-init/ecs-init/gpu"
 	"github.com/golang/mock/gomock"
 )
 
@@ -30,19 +32,64 @@ func TestPreStartImageAlreadyCachedAndLoaded(t *testing.T) {
 
 	mockDocker := NewMockdockerClient(mockCtrl)
 	mockDownloader := NewMockdownloader(mockCtrl)
-	mockDownloader.EXPECT().IsAgentCached().Return(true)
+
+	mockDocker.EXPECT().LoadEnvVars().Return(nil)
+	// Docker reports image is loaded.
 	mockDocker.EXPECT().IsAgentImageLoaded().Return(true, nil)
+	// Agent tarball and state is present
+	mockDownloader.EXPECT().AgentCacheStatus().Return(cache.StatusCached)
 
 	mockLoopbackRouting := NewMockloopbackRouting(mockCtrl)
 	mockLoopbackRouting.EXPECT().Enable().Return(nil)
+	mockIpv6RouterAdvertisements := NewMockipv6RouterAdvertisements(mockCtrl)
+	mockIpv6RouterAdvertisements.EXPECT().Disable().Return(nil)
 	mockRoute := NewMockcredentialsProxyRoute(mockCtrl)
 	mockRoute.EXPECT().Create().Return(nil)
 
 	engine := &Engine{
-		docker:                mockDocker,
-		downloader:            mockDownloader,
-		loopbackRouting:       mockLoopbackRouting,
-		credentialsProxyRoute: mockRoute,
+		docker:                   mockDocker,
+		downloader:               mockDownloader,
+		loopbackRouting:          mockLoopbackRouting,
+		ipv6RouterAdvertisements: mockIpv6RouterAdvertisements,
+		credentialsProxyRoute:    mockRoute,
+	}
+	err := engine.PreStart()
+	if err != nil {
+		t.Errorf("engine pre-start error: %v", err)
+	}
+}
+
+func TestPreStartReloadNeeded(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	cachedAgentBuffer := ioutil.NopCloser(&bytes.Buffer{})
+
+	mockDocker := NewMockdockerClient(mockCtrl)
+	mockDownloader := NewMockdownloader(mockCtrl)
+
+	mockDocker.EXPECT().LoadEnvVars().Return(nil)
+	// Docker reports image is loaded.
+	mockDocker.EXPECT().IsAgentImageLoaded().Return(true, nil)
+	// Agent tarball and state is present, but requires a reload off of disk
+	mockDownloader.EXPECT().AgentCacheStatus().Return(cache.StatusReloadNeeded)
+	mockDownloader.EXPECT().LoadCachedAgent().Return(cachedAgentBuffer, nil)
+	mockDocker.EXPECT().LoadImage(cachedAgentBuffer)
+	mockDownloader.EXPECT().RecordCachedAgent()
+
+	mockLoopbackRouting := NewMockloopbackRouting(mockCtrl)
+	mockLoopbackRouting.EXPECT().Enable().Return(nil)
+	mockIpv6RouterAdvertisements := NewMockipv6RouterAdvertisements(mockCtrl)
+	mockIpv6RouterAdvertisements.EXPECT().Disable().Return(nil)
+	mockRoute := NewMockcredentialsProxyRoute(mockCtrl)
+	mockRoute.EXPECT().Create().Return(nil)
+
+	engine := &Engine{
+		docker:                   mockDocker,
+		downloader:               mockDownloader,
+		loopbackRouting:          mockLoopbackRouting,
+		ipv6RouterAdvertisements: mockIpv6RouterAdvertisements,
+		credentialsProxyRoute:    mockRoute,
 	}
 	err := engine.PreStart()
 	if err != nil {
@@ -60,20 +107,24 @@ func TestPreStartImageNotLoadedCached(t *testing.T) {
 	mockDownloader := NewMockdownloader(mockCtrl)
 	mockLoopbackRouting := NewMockloopbackRouting(mockCtrl)
 	mockRoute := NewMockcredentialsProxyRoute(mockCtrl)
-	mockRoute.EXPECT().Create().Return(nil)
 
+	mockDocker.EXPECT().LoadEnvVars().Return(nil)
+	mockRoute.EXPECT().Create().Return(nil)
 	mockLoopbackRouting.EXPECT().Enable().Return(nil)
-	mockDownloader.EXPECT().IsAgentCached().Return(true)
+	mockIpv6RouterAdvertisements := NewMockipv6RouterAdvertisements(mockCtrl)
+	mockIpv6RouterAdvertisements.EXPECT().Disable().Return(nil)
 	mockDocker.EXPECT().IsAgentImageLoaded().Return(false, nil)
+	mockDownloader.EXPECT().AgentCacheStatus().Return(cache.StatusCached)
 	mockDownloader.EXPECT().LoadCachedAgent().Return(cachedAgentBuffer, nil)
 	mockDocker.EXPECT().LoadImage(cachedAgentBuffer)
 	mockDownloader.EXPECT().RecordCachedAgent()
 
 	engine := &Engine{
-		docker:                mockDocker,
-		downloader:            mockDownloader,
-		loopbackRouting:       mockLoopbackRouting,
-		credentialsProxyRoute: mockRoute,
+		docker:                   mockDocker,
+		downloader:               mockDownloader,
+		loopbackRouting:          mockLoopbackRouting,
+		ipv6RouterAdvertisements: mockIpv6RouterAdvertisements,
+		credentialsProxyRoute:    mockRoute,
 	}
 	err := engine.PreStart()
 	if err != nil {
@@ -90,7 +141,9 @@ func TestPreStartImageNotCached(t *testing.T) {
 	mockDocker := NewMockdockerClient(mockCtrl)
 	mockDownloader := NewMockdownloader(mockCtrl)
 
-	mockDownloader.EXPECT().IsAgentCached().Return(false)
+	mockDocker.EXPECT().LoadEnvVars().Return(nil)
+	mockDocker.EXPECT().IsAgentImageLoaded().Return(false, nil)
+	mockDownloader.EXPECT().AgentCacheStatus().Return(cache.StatusUncached)
 	mockDownloader.EXPECT().DownloadAgent()
 	mockDownloader.EXPECT().LoadCachedAgent().Return(cachedAgentBuffer, nil)
 	mockDocker.EXPECT().LoadImage(cachedAgentBuffer)
@@ -98,18 +151,80 @@ func TestPreStartImageNotCached(t *testing.T) {
 
 	mockLoopbackRouting := NewMockloopbackRouting(mockCtrl)
 	mockLoopbackRouting.EXPECT().Enable().Return(nil)
+	mockIpv6RouterAdvertisements := NewMockipv6RouterAdvertisements(mockCtrl)
+	mockIpv6RouterAdvertisements.EXPECT().Disable().Return(nil)
 	mockRoute := NewMockcredentialsProxyRoute(mockCtrl)
 	mockRoute.EXPECT().Create().Return(nil)
 
 	engine := &Engine{
-		docker:                mockDocker,
-		downloader:            mockDownloader,
-		loopbackRouting:       mockLoopbackRouting,
-		credentialsProxyRoute: mockRoute,
+		docker:                   mockDocker,
+		downloader:               mockDownloader,
+		loopbackRouting:          mockLoopbackRouting,
+		ipv6RouterAdvertisements: mockIpv6RouterAdvertisements,
+		credentialsProxyRoute:    mockRoute,
 	}
 	err := engine.PreStart()
 	if err != nil {
 		t.Errorf("engine pre-start error: %v", err)
+	}
+}
+
+func TestPreStartGPUSetupSuccessful(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockDocker := NewMockdockerClient(mockCtrl)
+	mockDownloader := NewMockdownloader(mockCtrl)
+	mockGPUManager := gpu.NewMockGPUManager(mockCtrl)
+
+	mockDocker.EXPECT().LoadEnvVars().Return(map[string]string{
+		"ECS_ENABLE_GPU_SUPPORT": "true",
+	})
+	mockGPUManager.EXPECT().Setup().Return(nil)
+	// Docker reports image is loaded.
+	mockDocker.EXPECT().IsAgentImageLoaded().Return(true, nil)
+	// Agent tarball and state is present
+	mockDownloader.EXPECT().AgentCacheStatus().Return(cache.StatusCached)
+
+	mockLoopbackRouting := NewMockloopbackRouting(mockCtrl)
+	mockLoopbackRouting.EXPECT().Enable().Return(nil)
+	mockIpv6RouterAdvertisements := NewMockipv6RouterAdvertisements(mockCtrl)
+	mockIpv6RouterAdvertisements.EXPECT().Disable().Return(nil)
+	mockRoute := NewMockcredentialsProxyRoute(mockCtrl)
+	mockRoute.EXPECT().Create().Return(nil)
+
+	engine := &Engine{
+		docker:                   mockDocker,
+		downloader:               mockDownloader,
+		loopbackRouting:          mockLoopbackRouting,
+		ipv6RouterAdvertisements: mockIpv6RouterAdvertisements,
+		credentialsProxyRoute:    mockRoute,
+		nvidiaGPUManager:         mockGPUManager,
+	}
+	err := engine.PreStart()
+	if err != nil {
+		t.Errorf("engine pre-start error: %v", err)
+	}
+}
+
+func TestPreStartGPUSetupError(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockDocker := NewMockdockerClient(mockCtrl)
+	mockGPUManager := gpu.NewMockGPUManager(mockCtrl)
+
+	mockDocker.EXPECT().LoadEnvVars().Return(map[string]string{
+		"ECS_ENABLE_GPU_SUPPORT": "true",
+	})
+	mockGPUManager.EXPECT().Setup().Return(errors.New("gpu setup failed"))
+	engine := &Engine{
+		docker:           mockDocker,
+		nvidiaGPUManager: mockGPUManager,
+	}
+	err := engine.PreStart()
+	if err == nil {
+		t.Error("Expected error to be returned but was nil")
 	}
 }
 
@@ -147,6 +262,27 @@ func TestStartSupervisedExitsWhenTerminalFailure(t *testing.T) {
 		mockDocker.EXPECT().RemoveExistingAgentContainer(),
 		mockDocker.EXPECT().StartAgent().Return(terminalFailureAgentExitCode, nil),
 	)
+
+	engine := &Engine{
+		docker: mockDocker,
+	}
+	err := engine.StartSupervised()
+	if err == nil {
+		t.Error("Expected error to be returned but was nil")
+	}
+}
+
+func TestLogContainerFailureAgentExitCodeFailure(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockDocker := NewMockdockerClient(mockCtrl)
+
+	mockDocker.EXPECT().RemoveExistingAgentContainer()
+	mockDocker.EXPECT().StartAgent().Return(2, nil)
+	mockDocker.EXPECT().GetContainerLogTail(gomock.Any())
+	mockDocker.EXPECT().RemoveExistingAgentContainer()
+	mockDocker.EXPECT().StartAgent().Return(0, errors.New("test error"))
 
 	engine := &Engine{
 		docker: mockDocker,
@@ -333,8 +469,9 @@ func TestPrestartLoopbackRoutingNotEnabled(t *testing.T) {
 
 	mockDocker := NewMockdockerClient(mockCtrl)
 	mockDownloader := NewMockdownloader(mockCtrl)
-
 	mockLoopbackRouting := NewMockloopbackRouting(mockCtrl)
+
+	mockDocker.EXPECT().LoadEnvVars().Return(nil)
 	mockLoopbackRouting.EXPECT().Enable().Return(fmt.Errorf("sysctl not found"))
 	mockRoute := NewMockcredentialsProxyRoute(mockCtrl)
 
@@ -356,17 +493,21 @@ func TestPrestartCredentialsProxyRouteNotCreated(t *testing.T) {
 
 	mockDocker := NewMockdockerClient(mockCtrl)
 	mockDownloader := NewMockdownloader(mockCtrl)
-
 	mockLoopbackRouting := NewMockloopbackRouting(mockCtrl)
+	mockIpv6RouterAdvertisements := NewMockipv6RouterAdvertisements(mockCtrl)
+	mockIpv6RouterAdvertisements.EXPECT().Disable().Return(nil)
+
+	mockDocker.EXPECT().LoadEnvVars().Return(nil)
 	mockLoopbackRouting.EXPECT().Enable().Return(nil)
 	mockRoute := NewMockcredentialsProxyRoute(mockCtrl)
 	mockRoute.EXPECT().Create().Return(fmt.Errorf("iptables not found"))
 
 	engine := &Engine{
-		docker:                mockDocker,
-		downloader:            mockDownloader,
-		loopbackRouting:       mockLoopbackRouting,
-		credentialsProxyRoute: mockRoute,
+		docker:                   mockDocker,
+		downloader:               mockDownloader,
+		loopbackRouting:          mockLoopbackRouting,
+		ipv6RouterAdvertisements: mockIpv6RouterAdvertisements,
+		credentialsProxyRoute:    mockRoute,
 	}
 	err := engine.PreStart()
 	if err == nil {

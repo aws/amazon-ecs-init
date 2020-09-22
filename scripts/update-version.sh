@@ -17,8 +17,8 @@
 set -e -x
 
 CURRENTDIR=$(dirname "${0}")
-version=$(cat "${CURRENTDIR}"/../ecs-init/VERSION)
-git_hash=$(git rev-parse --short HEAD)
+version=$(cat "${CURRENTDIR}"/../ecs-init/ECSVERSION)
+git_hash=$(git rev-parse --short=8 HEAD)
 git_dirty=false
 
 if [[ "$(git status --porcelain)" != "" ]]; then

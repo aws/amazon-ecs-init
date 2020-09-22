@@ -1,4 +1,4 @@
-// Copyright 2015 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2015-2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"). You may
 // not use this file except in compliance with the License. A copy of the
@@ -14,8 +14,18 @@
 package config
 
 import (
+	"encoding/json"
+	"fmt"
+	"io"
 	"os"
+	"runtime"
 	"strings"
+
+	"github.com/cihub/seelog"
+
+	"github.com/aws/aws-sdk-go/aws/endpoints"
+	godocker "github.com/fsouza/go-dockerclient"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -33,19 +43,90 @@ const (
 	// Used to mount /proc for agent container
 	ProcFS = "/proc"
 
-	// AgentFilename is the filename, including version number, of the agent to be downloaded.
-	AgentFilename = "ecs-agent-v1.17.1.tar"
+	// DefaultAgentVersion is the version of the agent that will be
+	// fetched if required. This should look like v1.2.3 or an
+	// 8-character sha, as is downloadable from S3.
+	DefaultAgentVersion = "v1.44.4"
 
-	// DefaultRegionName is the name of the region to fall back to if no entry for the region name is found in the
-	// S3BucketMap.
-	DefaultRegionName = "default"
+	// AgentPartitionBucketName is the name of the paritional s3 bucket that stores the agent
+	AgentPartitionBucketName = "amazon-ecs-agent"
+
+	// DefaultRegionName is the default region to fall back if the user's region is not a region containing
+	// the agent bucket
+	DefaultRegionName = endpoints.UsEast1RegionID
+
+	// dockerJSONLogMaxSize is the maximum allowed size of the
+	// individual backing json log files for the managed container.
+	dockerJSONLogMaxSize = "16m"
+	// dockerJSONLogMaxSizeEnvVar is the environment variable that may
+	// be used to override the default value of dockerJSONLogMaxSize
+	// used for managed containers.
+	dockerJSONLogMaxSizeEnvVar = "ECS_INIT_DOCKER_LOG_FILE_SIZE"
+
+	// dockerJSONLogMaxFiles is the maximum rotated number of backing
+	// json log files on disk managed by docker for the managed
+	// container.
+	dockerJSONLogMaxFiles = "4"
+	// dockerJSONLogMaxSizeEnvVar is the environment variable that may
+	// be used to override the default value used of
+	// dockerJSONLogMaxFiles for managed containers.
+	dockerJSONLogMaxFilesEnvVar = "ECS_INIT_DOCKER_LOG_FILE_NUM"
+
+	// agentLogDriverEnvVar is the environment variable that may be used
+	// to set a log driver for the agent container
+	agentLogDriverEnvVar = "ECS_LOG_DRIVER"
+	// agentLogOptionsEnvVar is the environment variable that may be used to specify options
+	// for the log driver set in agentLogDriverEnvVar
+	agentLogOptionsEnvVar = "ECS_LOG_OPTS"
+	// defaultLogDriver is the logging driver that will be used if one is not explicitly
+	// set in agentLogDriverEnvVar
+	defaultLogDriver = "json-file"
+
+	// GPUSupportEnvVar indicates that the AMI has support for GPU
+	GPUSupportEnvVar = "ECS_ENABLE_GPU_SUPPORT"
+
+	// DockerHostEnvVar is the environment variable that specifies the location of the Docker daemon socket.
+	DockerHostEnvVar = "DOCKER_HOST"
 )
 
-// regionToS3BucketURL provides a mapping of region names to specific URI's for the region.
-var regionToS3BucketURL = map[string]string{
-	"cn-north-1":      "https://s3.cn-north-1.amazonaws.com.cn/amazon-ecs-agent/",
-	"us-gov-west-1":   "https://s3-fips-us-gov-west-1.amazonaws.com/amazon-ecs-agent/",
-	DefaultRegionName: "https://s3.amazonaws.com/amazon-ecs-agent/",
+// partitionBucketRegion provides the "partitional" bucket region
+// suitable for downloading agent from.
+var partitionBucketRegion = map[string]string{
+	endpoints.AwsPartitionID:      endpoints.UsEast1RegionID,
+	endpoints.AwsCnPartitionID:    endpoints.CnNorth1RegionID,
+	endpoints.AwsUsGovPartitionID: endpoints.UsGovWest1RegionID,
+}
+
+// goarch is an injectable GOARCH runtime string. This controls the
+// formatting of configuration for supported architectures.
+var goarch string = runtime.GOARCH
+
+// validDrivers is the set of all supported Docker logging drivers that
+// can be used as the log driver for the Agent container
+var validDrivers = map[string]struct{}{
+	"awslogs":    {},
+	"fluentd":    {},
+	"gelf":       {},
+	"json-file":  {},
+	"journald":   {},
+	"logentries": {},
+	"syslog":     {},
+	"splunk":     {},
+}
+
+// GetAgentPartitionBucketRegion returns the s3 bucket region where ECS Agent artifact is located
+func GetAgentPartitionBucketRegion(region string) (string, error) {
+	regionPartition, ok := endpoints.PartitionForRegion(endpoints.DefaultPartitions(), region)
+	if !ok {
+		return "", errors.Errorf("could not resolve partition ID for region %q", region)
+	}
+
+	bucketRegion, ok := partitionBucketRegion[regionPartition.ID()]
+	if !ok {
+		return "", errors.Errorf("no bucket available for partition ID %q", regionPartition.ID())
+	}
+
+	return bucketRegion, nil
 }
 
 // AgentConfigDirectory returns the location on disk for configuration
@@ -77,12 +158,6 @@ func AgentDataDirectory() string {
 	return directoryPrefix + "/var/lib/ecs/data"
 }
 
-// AgentDHClientLeasesDirectory returns the location on disk where dhclient
-// leases information is tracked for ENIs attached to tasks
-func AgentDHClientLeasesDirectory() string {
-	return directoryPrefix + "/var/lib/ecs/dhclient"
-}
-
 // CacheDirectory returns the location on disk where Agent images should be cached
 func CacheDirectory() string {
 	return directoryPrefix + "/var/cache/ecs"
@@ -98,16 +173,22 @@ func AgentTarball() string {
 	return CacheDirectory() + "/ecs-agent.tar"
 }
 
-// AgentRemoteTarball is the remote location of the Agent image, used for populating the cache. This is retrieved
-// by region and the agent filename is appended.
-func AgentRemoteTarball(region string) string {
-	baseURI := getBaseLocationForRegion(region)
-	return baseURI + AgentFilename
+// AgentRemoteTarballKey is the remote filename of the Agent image, used for populating the cache
+func AgentRemoteTarballKey() (string, error) {
+	name, err := agentArtifactName(DefaultAgentVersion, goarch)
+	if err != nil {
+		return "", errors.Wrap(err, "no artifact available")
+	}
+	return fmt.Sprintf("%s.tar", name), nil
 }
 
-// AgentRemoteTarballMD5 is the remote location of a md5sum used to verify the integrity of the AgentRemoteTarball
-func AgentRemoteTarballMD5(region string) string {
-	return AgentRemoteTarball(region) + ".md5"
+// AgentRemoteTarballMD5Key is the remote file of a md5sum used to verify the integrity of the AgentRemoteTarball
+func AgentRemoteTarballMD5Key() (string, error) {
+	tarballKey, err := AgentRemoteTarballKey()
+	if err != nil {
+		return "", err
+	}
+	return tarballKey + ".md5", nil
 }
 
 // DesiredImageLocatorFile returns the location on disk of a well-known file describing an Agent image to load
@@ -115,13 +196,13 @@ func DesiredImageLocatorFile() string {
 	return CacheDirectory() + "/desired-image"
 }
 
-// DockerUnixSocket returns the docker socket endpoint and whether it's read from DOCKER_HOST
+// DockerUnixSocket returns the docker socket endpoint and whether it's read from DockerHostEnvVar
 func DockerUnixSocket() (string, bool) {
-	if dockerHost := os.Getenv("DOCKER_HOST"); strings.HasPrefix(dockerHost, UnixSocketPrefix) {
+	if dockerHost := os.Getenv(DockerHostEnvVar); strings.HasPrefix(dockerHost, UnixSocketPrefix) {
 		return strings.TrimPrefix(dockerHost, UnixSocketPrefix), true
 	}
-	// return /var/run instead of /var/run/docker.sock, in case the /var/run/docker.sock is deleted and recreated outside the container,
-	// eg: Docker daemon restart
+	// return /var/run instead of /var/run/docker.sock, in case the /var/run/docker.sock is deleted and recreated
+	// outside the container, eg: Docker daemon restart
 	return "/var/run", false
 }
 
@@ -130,12 +211,93 @@ func CgroupMountpoint() string {
 	return cgroupMountpoint
 }
 
-// getBaseLocationForRegion fetches the bucket URI from list of S3 Buckets by region name or default if key is not found
-func getBaseLocationForRegion(regionName string) string {
-	s3BucketURL, ok := regionToS3BucketURL[regionName]
-	if !ok {
-		return regionToS3BucketURL[DefaultRegionName]
+// HostCertsDirPath() returns the CA store path on the host
+func HostCertsDirPath() string {
+	if _, err := os.Stat(hostCertsDirPath); err != nil {
+		return ""
 	}
+	return hostCertsDirPath
+}
 
-	return s3BucketURL
+// HostPKIDirPath() returns the CA store path on the host
+func HostPKIDirPath() string {
+	if _, err := os.Stat(hostPKIDirPath); err != nil {
+		return ""
+	}
+	return hostPKIDirPath
+}
+
+// AgentDockerLogDriverConfiguration returns a LogConfig object
+// suitable for used with the managed container.
+func AgentDockerLogDriverConfiguration() godocker.LogConfig {
+	driver := defaultLogDriver
+	options := parseLogOptions()
+	if envDriver := os.Getenv(agentLogDriverEnvVar); envDriver != "" {
+		if _, ok := validDrivers[envDriver]; ok {
+			driver = envDriver
+		} else {
+			seelog.Warnf("Input value for \"ECS_LOG_DRIVER\" is not a supported log driver, overriding to %s and using default log options", defaultLogDriver)
+			options = nil
+		}
+	}
+	if driver == defaultLogDriver && options == nil {
+		maxSize := dockerJSONLogMaxSize
+		if fromEnv := os.Getenv(dockerJSONLogMaxSizeEnvVar); fromEnv != "" {
+			maxSize = fromEnv
+		}
+		maxFiles := dockerJSONLogMaxFiles
+		if fromEnv := os.Getenv(dockerJSONLogMaxFilesEnvVar); fromEnv != "" {
+			maxFiles = fromEnv
+		}
+		options = map[string]string{
+			"max-size": maxSize,
+			"max-file": maxFiles,
+		}
+	}
+	return godocker.LogConfig{
+		Type:   driver,
+		Config: options,
+	}
+}
+
+func parseLogOptions() map[string]string {
+	opts := os.Getenv(agentLogOptionsEnvVar)
+	logOptsDecoder := json.NewDecoder(strings.NewReader(opts))
+	var logOptions map[string]string
+	err := logOptsDecoder.Decode(&logOptions)
+	// blank string is not a warning
+	if err != io.EOF && err != nil {
+		seelog.Warnf("Invalid format for \"ECS_LOG_OPTS\", expected a json object with string key value. error: %v", err)
+	}
+	return logOptions
+}
+
+// InstanceConfigDirectory returns the location on disk for custom instance configuration
+func InstanceConfigDirectory() string {
+	return directoryPrefix + "/var/lib/ecs"
+}
+
+// InstanceConfigFile returns the location of a file of custom environment variables
+func InstanceConfigFile() string {
+	return InstanceConfigDirectory() + "/ecs.config"
+}
+
+// RunPrivileged returns if agent should be invoked with '--privileged'. This is not
+// recommended and may be removed in future versions of amazon-ecs-init.
+func RunPrivileged() bool {
+	envVar := os.Getenv("ECS_AGENT_RUN_PRIVILEGED")
+	return envVar == "true"
+}
+
+func agentArtifactName(version string, arch string) (string, error) {
+	var interpose string
+	switch arch {
+	case "amd64":
+		interpose = ""
+	case "arm64":
+		interpose = "-" + arch
+	default:
+		return "", errors.Errorf("unknown architecture %q", arch)
+	}
+	return fmt.Sprintf("ecs-agent%s-%s", interpose, version), nil
 }

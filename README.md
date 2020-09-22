@@ -12,6 +12,18 @@ The script will clean up any previous copies of the Amazon ECS Container Agent, 
 the RPM are available at `/var/log/ecs/ecs-init.log`, while logs from the Amazon ECS Container Agent are available at
 `/var/log/ecs/ecs-agent.log`.  The Amazon ECS RPM makes the Amazon ECS Container Agent introspection endpoint available
 at `http://127.0.0.1:51678/v1`.  Configuration for the Amazon ECS Container Agent is read from `/etc/ecs/ecs.config`.
+All of the configurations in this file are used as environment variables of the ECS Agent container. Additionally, some
+configurations can be used to configure other properties of the ECS Agent container, as described below.
+
+| Configuration Key | Example Value(s)            | Description | Default value |
+|:----------------|:----------------------------|:------------|:-----------------------|
+| `ECS_AGENT_LABELS` | `{"test.label.1":"value1","test.label.2":"value2"}` | The labels to add to the ECS Agent container. | |
+
+Additionally, the following environment variable(s) can be used to configure the behavior of the RPM:
+
+| Environment Variable Name | Example Value(s)            | Description | Default value |
+|:----------------|:----------------------------|:------------|:-----------------------|
+| `ECS_SKIP_LOCALHOST_TRAFFIC_FILTER` | &lt;true &#124; false&gt; | By default, the ecs-init service adds an iptable rule to drop non-local packets to localhost if they're not part of an existing forwarded connection or DNAT, and removes the rule upon stop. If `ECS_SKIP_LOCALHOST_TRAFFIC_FILTER` is set to true, this rule will not be added/removed. | false |
 
 ## Usage
 The upstart script installed by the Amazon Elastic Container Service RPM can be started or stopped with the following commands respectively:
@@ -26,6 +38,19 @@ an update failed and the Amazon ECS Container Agent is no longer functional, a r
 1. `sudo stop ecs`
 2. `sudo /usr/libexec/amazon-ecs-init reload-cache`
 3. `sudo start ecs`
+
+## Security disclosures
+If you think you’ve found a potential security issue, please do not post it in the Issues.  Instead, please follow the instructions [here](https://aws.amazon.com/security/vulnerability-reporting/) or [email AWS security directly](mailto:aws-security@amazon.com).
+
+## Development
+
+#### Dev dependencies
+
+Run `make get-deps` to get dependencies for running tests and generating mocks.
+
+#### Generating mocks
+
+Mocks can be generated using the `make generate` Makefile target. **NOTE** that this must be run on a linux machine.
 
 ## License
 

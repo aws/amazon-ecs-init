@@ -20,8 +20,8 @@ export GOPATH="${TOPWD}/ecs-init/:${BUILDDIR}"
 export SRCPATH="${BUILDDIR}/src/github.com/aws/amazon-ecs-init"
 
 if [ -d "${TOPWD}/.git" ]; then
-    version=$(cat "${TOPWD}/ecs-init/VERSION")
-    git_hash=$(git rev-parse --short HEAD)
+    version=$(cat "${TOPWD}/ecs-init/ECSVERSION")
+    git_hash=$(git rev-parse --short=8 HEAD)
     git_dirty=false
 
     if [[ "$(git status --porcelain)" != "" ]]; then
@@ -37,15 +37,17 @@ mkdir -p "${SRCPATH}"
 ln -s "${TOPWD}/ecs-init" "${SRCPATH}"
 cd "${SRCPATH}/ecs-init"
 if [[ "$1" == "dev" ]]; then
-	go build -tags 'development' -ldflags "${VERSION_FLAG} ${GIT_HASH_FLAG} ${GIT_DIRTY_FLAG}" \
+	CGO_ENABLED=1 CGO_LDFLAGS_ALLOW='-Wl,--unresolved-symbols=ignore-in-object-files' go build -tags 'development' -ldflags "${VERSION_FLAG} ${GIT_HASH_FLAG} ${GIT_DIRTY_FLAG}" \
 	   -o "${TOPWD}/amazon-ecs-init"
 else
 	tags=""
 	if [[ "$1" != "" ]]; then
 		tags="-tags '$1'"
 	fi
-	CGO_ENABLED=0 go build -a ${tags} -x -ldflags '-s' \
-		   -ldflags "${VERSION_FLAG} ${GIT_HASH_FLAG} ${GIT_DIRTY_FLAG}" \
+	CGO_ENABLED=1 CGO_LDFLAGS_ALLOW='-Wl,--unresolved-symbols=ignore-in-object-files' go build -a ${tags} -x \
+		   -ldflags "-s ${VERSION_FLAG} ${GIT_HASH_FLAG} ${GIT_DIRTY_FLAG}" \
 		   -o "${TOPWD}/amazon-ecs-init"
 fi
+CGO_ENABLED=0 go build -x -ldflags "-s ${VERSION_FLAG} ${GIT_HASH_FLAG} ${GIT_DIRTY_FLAG}" \
+	-o "${TOPWD}/amazon-ecs-volume-plugin" "./volumes/amazon-ecs-volume-plugin"
 rm -r "${BUILDDIR}"

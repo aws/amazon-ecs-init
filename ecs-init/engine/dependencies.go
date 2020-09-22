@@ -1,4 +1,4 @@
-// Copyright 2015-2016 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2015-2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"). You may
 // not use this file except in compliance with the License. A copy of the
@@ -15,6 +15,8 @@ package engine
 
 import (
 	"io"
+
+	"github.com/aws/amazon-ecs-init/ecs-init/cache"
 )
 
 //go:generate mockgen.sh $GOPACKAGE $GOFILE
@@ -25,14 +27,17 @@ type downloader interface {
 	LoadCachedAgent() (io.ReadCloser, error)
 	LoadDesiredAgent() (io.ReadCloser, error)
 	RecordCachedAgent() error
+	AgentCacheStatus() cache.CacheStatus
 }
 
 type dockerClient interface {
+	GetContainerLogTail(logWindowSize string) string
 	IsAgentImageLoaded() (bool, error)
 	LoadImage(image io.Reader) error
 	RemoveExistingAgentContainer() error
 	StartAgent() (int, error)
 	StopAgent() error
+	LoadEnvVars() map[string]string
 }
 
 type loopbackRouting interface {
@@ -43,4 +48,8 @@ type loopbackRouting interface {
 type credentialsProxyRoute interface {
 	Create() error
 	Remove() error
+}
+
+type ipv6RouterAdvertisements interface {
+	Disable() error
 }

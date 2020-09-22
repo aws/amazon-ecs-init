@@ -13,3 +13,9 @@
 /SRPMS
 /ecs-init.spec
 /sources.tgz
+ecs-agent-*.tar
+ecs.service
+*.log
+.idea/
+cover.out
+coverprofile.out

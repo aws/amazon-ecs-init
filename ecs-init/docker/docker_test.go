@@ -751,3 +751,44 @@ func TestGetDockerSocketBind(t *testing.T) {
 		})
 	}
 }
+
+func TestGetCapabilityExecBinds(t *testing.T) {
+	testCases := []struct {
+		name          string
+		pathPredicate func(path string, predicate func(fileInfo os.FileInfo) bool) (bool, error)
+		expectedBinds []string
+	}{
+		{
+			name: "all paths valid",
+			pathPredicate: func(path string, predicate func(fileInfo os.FileInfo) bool) (bool, error) {
+				return true, nil
+			},
+			expectedBinds: []string{
+				"/home/ec2-user/capabilities-deps/exec/bin:/capabilities/exec/bin:ro",
+				"/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem:/capabilities/exec/certs/tls-ca-bundle.pem:ro",
+			},
+		},
+		{
+			name: "only ssm-agent bin path valid",
+			pathPredicate: func(path string, predicate func(fileInfo os.FileInfo) bool) (bool, error) {
+				return path == "/home/ec2-user/capabilities-deps/exec/bin", nil
+			},
+			expectedBinds: []string{
+				"/home/ec2-user/capabilities-deps/exec/bin:/capabilities/exec/bin:ro",
+			},
+		},
+		{
+			name: "no path valid",
+			pathPredicate: func(path string, predicate func(fileInfo os.FileInfo) bool) (bool, error) {
+				return false, nil
+			},
+			expectedBinds: []string{},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			binds := getCapabilityExecBinds(tc.pathPredicate)
+			assert.Equal(t, tc.expectedBinds, binds)
+		})
+	}
+}

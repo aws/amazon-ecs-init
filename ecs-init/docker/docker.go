@@ -462,7 +462,7 @@ func getCapabilityExecBinds(pathPredicate func(path string, predicate func(fileI
 
 	binds := []string{}
 
-	// bind mount the entire /deps/exec/bin folder for higher flexibility
+	// bind mount the entire /host/dependency/path/exec/bin folder for higher flexibility
 	// minimal change required to add other ssm binaries as dependency in the future (just need to be placed inside the bin directory)
 	hostCapabilityExecBinDir := filepath.Join(hostCapabilityExecResourcesDir, hostBinRelativePath)
 	if exists, err := pathPredicate(hostCapabilityExecBinDir, isDir); err == nil && exists {

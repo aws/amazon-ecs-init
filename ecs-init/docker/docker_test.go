@@ -16,6 +16,7 @@ package docker
 import (
 	"errors"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/aws/amazon-ecs-init/ecs-init/config"
@@ -753,6 +754,17 @@ func TestGetDockerSocketBind(t *testing.T) {
 }
 
 func TestGetCapabilityExecBinds(t *testing.T) {
+	hostCapabilityExecResourcesDir := filepath.Join(hostCapabilitiesResourcesRootDir, capabilityExecName)
+	containerCapabilityExecResourcesDir := filepath.Join(containerCapabilitiesResourcesRootDir, capabilityExecName)
+
+	// binaries
+	hostBinDir := filepath.Join(hostCapabilityExecResourcesDir, capabilityExecHostBinRelativePath)
+	containerBinDir := filepath.Join(containerCapabilityExecResourcesDir, capabilityExecContainerBinRelativePath)
+
+	// certs
+	hostCertsFile := filepath.Join(capabilityExecHostCertsDir, capabilityExecHostCertsFilename)
+	containerCertsFile := filepath.Join(containerCapabilityExecResourcesDir, capabilityExecContainerCertsRelativePath, capabilityExecHostCertsFilename)
+
 	testCases := []struct {
 		name          string
 		pathPredicate func(path string, predicate func(fileInfo os.FileInfo) bool) (bool, error)
@@ -764,17 +776,17 @@ func TestGetCapabilityExecBinds(t *testing.T) {
 				return true, nil
 			},
 			expectedBinds: []string{
-				"/home/ec2-user/capabilities-deps/exec/bin:/capabilities/exec/bin:ro",
-				"/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem:/capabilities/exec/certs/tls-ca-bundle.pem:ro",
+				hostBinDir + ":" + containerBinDir + readOnly,
+				hostCertsFile + ":" + containerCertsFile + readOnly,
 			},
 		},
 		{
 			name: "only ssm-agent bin path valid",
 			pathPredicate: func(path string, predicate func(fileInfo os.FileInfo) bool) (bool, error) {
-				return path == "/home/ec2-user/capabilities-deps/exec/bin", nil
+				return path == hostBinDir, nil
 			},
 			expectedBinds: []string{
-				"/home/ec2-user/capabilities-deps/exec/bin:/capabilities/exec/bin:ro",
+				hostBinDir + ":" + containerBinDir + readOnly,
 			},
 		},
 		{

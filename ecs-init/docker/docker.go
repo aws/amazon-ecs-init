@@ -107,6 +107,16 @@ const (
 	iptablesUsrLibDir   = "/usr/lib"
 	iptablesLib64Dir    = "/lib64"
 	iptablesUsrLib64Dir = "/usr/lib64"
+
+	hostCapabilitiesResourcesRootDir      = "/home/ec2-user"
+	containerCapabilitiesResourcesRootDir = "/capabilities"
+
+	capabilityExecName                       = "exec"
+	capabilityExecHostBinRelativePath        = "ssm-agent/linux_amd64"
+	capabilityExecHostCertsDir               = "/etc/pki/ca-trust/extracted/pem"
+	capabilityExecHostCertsFilename          = "tls-ca-bundle.pem"
+	capabilityExecContainerBinRelativePath   = "bin"
+	capabilityExecContainerCertsRelativePath = "certs"
 )
 
 var pluginDirs = []string{
@@ -434,45 +444,28 @@ func getDockerPluginDirBinds() []string {
 
 // take pathPredicate as an argument for unit testing
 func getCapabilityExecBinds(pathPredicate func(path string, predicate func(fileInfo os.FileInfo) bool) (bool, error)) []string {
-	const (
-		capabilityExecName = "exec"
-
-		hostCapabilitiesResourcesRootDir      = "/home/ec2-user/capabilities-deps"
-		containerCapabilitiesResourcesRootDir = "/capabilities"
-
-		hostBinRelativePath = "bin"
-		hostCertsDir        = "/etc/pki/ca-trust/extracted/pem"
-		hostCertsFilename   = "tls-ca-bundle.pem"
-
-		containerBinRelativePath   = "bin"
-		containerCertsRelativePath = "certs"
-
-		// SSM-related settings are not configurable for now
-		// containerCapabilityExecConfigPath = "config"
-	)
-
 	isDir := func(fileInfo os.FileInfo) bool {
 		return fileInfo.IsDir()
 	}
 	isFile := func(fileInfo os.FileInfo) bool {
 		return !fileInfo.IsDir()
 	}
-	hostCapabilityExecResourcesDir := filepath.Join(hostCapabilitiesResourcesRootDir, capabilityExecName)
-	containerCapabilityExecResourcesDir := filepath.Join(containerCapabilitiesResourcesRootDir, capabilityExecName)
+	hostResourcesDir := filepath.Join(hostCapabilitiesResourcesRootDir, capabilityExecName)
+	containerResourcesDir := filepath.Join(containerCapabilitiesResourcesRootDir, capabilityExecName)
 
 	binds := []string{}
 
 	// bind mount the entire /host/dependency/path/exec/bin folder for higher flexibility
 	// minimal change required to add other ssm binaries as dependency in the future (just need to be placed inside the bin directory)
-	hostCapabilityExecBinDir := filepath.Join(hostCapabilityExecResourcesDir, hostBinRelativePath)
-	if exists, err := pathPredicate(hostCapabilityExecBinDir, isDir); err == nil && exists {
-		binds = append(binds, hostCapabilityExecBinDir+":"+filepath.Join(containerCapabilityExecResourcesDir, containerBinRelativePath)+readOnly)
+	hostBinDir := filepath.Join(hostResourcesDir, capabilityExecHostBinRelativePath)
+	if exists, err := pathPredicate(hostBinDir, isDir); err == nil && exists {
+		binds = append(binds, hostBinDir+":"+filepath.Join(containerResourcesDir, capabilityExecContainerBinRelativePath)+readOnly)
 	}
 
 	// bind mount this specific cert file for now, CertsDir and CertsFile might be changed to be configurable in the future
-	hostCertsFile := filepath.Join(hostCertsDir, hostCertsFilename)
-	if exists, err := pathPredicate(hostCertsFile, isFile); err == nil && exists {
-		binds = append(binds, hostCertsFile+":"+filepath.Join(containerCapabilityExecResourcesDir, containerCertsRelativePath, hostCertsFilename)+readOnly)
+	hostCert := filepath.Join(capabilityExecHostCertsDir, capabilityExecHostCertsFilename)
+	if exists, err := pathPredicate(hostCert, isFile); err == nil && exists {
+		binds = append(binds, hostCert+":"+filepath.Join(containerResourcesDir, capabilityExecContainerCertsRelativePath, capabilityExecHostCertsFilename)+readOnly)
 	}
 
 	return binds

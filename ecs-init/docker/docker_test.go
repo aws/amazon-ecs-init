@@ -15,6 +15,7 @@ package docker
 
 import (
 	"errors"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -30,6 +31,8 @@ import (
 // Note: Change this value every time when a new bind mount is added to
 // agent for the tests to pass
 const (
+	testTempDirPrefix = "init-docker-test-"
+
 	expectedAgentBindsUnspecifiedPlatform = 19
 	expectedAgentBindsSuseUbuntuPlatform  = 17
 )
@@ -762,8 +765,8 @@ func TestGetCapabilityExecBinds(t *testing.T) {
 	containerBinDir := filepath.Join(containerCapabilityExecResourcesDir, capabilityExecContainerBinRelativePath)
 
 	// certs
-	hostCertsFile := filepath.Join(capabilityExecHostCertsDir, capabilityExecHostCertsFilename)
-	containerCertsFile := filepath.Join(containerCapabilityExecResourcesDir, capabilityExecContainerCertsRelativePath, capabilityExecHostCertsFilename)
+	hostCertsFile := filepath.Join(capabilityExecHostCertsDir, capabilityExecRequiredCert)
+	containerCertsFile := filepath.Join(containerCapabilityExecResourcesDir, capabilityExecContainerCertsRelativePath, capabilityExecRequiredCert)
 
 	testCases := []struct {
 		name          string
@@ -794,7 +797,7 @@ func TestGetCapabilityExecBinds(t *testing.T) {
 			pathPredicate: func(path string, predicate func(fileInfo os.FileInfo) bool) (bool, error) {
 				return false, nil
 			},
-			expectedBinds: []string{},
+			expectedBinds: nil,
 		},
 	}
 	for _, tc := range testCases {
@@ -803,4 +806,137 @@ func TestGetCapabilityExecBinds(t *testing.T) {
 			assert.Equal(t, tc.expectedBinds, binds)
 		})
 	}
+}
+
+func TestPathExistsAndValid(t *testing.T) {
+	rootDir, err := ioutil.TempDir(os.TempDir(), testTempDirPrefix)
+	if err != nil {
+		t.Error(err)
+	}
+	defer os.RemoveAll(rootDir)
+
+	file, err := ioutil.TempFile(rootDir, "file")
+	notExistingFilename := filepath.Join(rootDir, "file-not-existing")
+	alwaysValidPredicate := func(fileInfo os.FileInfo) bool {
+		return true
+	}
+	alwaysInvalidPredicate := func(fileInfo os.FileInfo) bool {
+		return false
+	}
+	testCases := []struct {
+		name      string
+		path      string
+		predicate func(fileInfo os.FileInfo) bool
+		expected  bool
+	}{
+		{
+			name:      "always return false if file does not exist",
+			path:      notExistingFilename,
+			predicate: alwaysValidPredicate,
+			expected:  false,
+		},
+		{
+			name:      "if file exists, return predicate result (true)",
+			path:      file.Name(),
+			predicate: alwaysValidPredicate,
+			expected:  true,
+		},
+		{
+			name:      "if file exists, return predicate result (false)",
+			path:      file.Name(),
+			predicate: alwaysInvalidPredicate,
+			expected:  false,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := pathExistsAndValid(tc.path, tc.predicate)
+			if err != nil {
+				t.Fatal(err)
+			}
+			assert.Equal(t, result, tc.expected)
+		})
+	}
+}
+
+func TestIsDir(t *testing.T) {
+	rootDir, err := ioutil.TempDir(os.TempDir(), testTempDirPrefix)
+	if err != nil {
+		t.Error(err)
+	}
+	defer os.RemoveAll(rootDir)
+
+	dir, err := ioutil.TempDir(rootDir, "dir")
+	file, err := ioutil.TempFile(rootDir, "file")
+
+	testCases := []struct {
+		name     string
+		path     string
+		expected bool
+	}{
+		{
+			name:     "should return true for directory",
+			path:     dir,
+			expected: true,
+		},
+		{
+			name:     "should return false for file",
+			path:     file.Name(),
+			expected: false,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			fileInfo, err := os.Stat(tc.path)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			assert.Equal(t, tc.expected, isDir(fileInfo))
+		})
+	}
+
+	// null check
+	assert.Equal(t, false, isDir(nil))
+}
+
+func TestIsFile(t *testing.T) {
+	rootDir, err := ioutil.TempDir(os.TempDir(), testTempDirPrefix)
+	if err != nil {
+		t.Error(err)
+	}
+	defer os.RemoveAll(rootDir)
+
+	dir, err := ioutil.TempDir(rootDir, "dir")
+	file, err := ioutil.TempFile(rootDir, "file")
+
+	testCases := []struct {
+		name     string
+		path     string
+		expected bool
+	}{
+		{
+			name:     "should return false for directory",
+			path:     dir,
+			expected: false,
+		},
+		{
+			name:     "should return true for file",
+			path:     file.Name(),
+			expected: true,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			fileInfo, err := os.Stat(tc.path)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			assert.Equal(t, tc.expected, isFile(fileInfo))
+		})
+	}
+
+	// null check
+	assert.Equal(t, false, isFile(nil))
 }

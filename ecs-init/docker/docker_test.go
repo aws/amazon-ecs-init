@@ -251,6 +251,20 @@ func validateCommonCreateContainerOptions(opts godocker.CreateContainerOptions, 
 	if certDir := config.HostPKIDirPath(); certDir == "" {
 		expectedAgentBinds = expectedAgentBindsSuseUbuntuPlatform
 	}
+	// add exec binds
+	hostCapabilityExecResourcesDir := filepath.Join(hostCapabilitiesResourcesRootDir, capabilityExecName)
+	bindSourcePaths := []struct {
+		path      string
+		predicate func(os.FileInfo) bool
+	}{
+		{filepath.Join(hostCapabilityExecResourcesDir, capabilityExecHostBinRelativePath), isDir},
+		{filepath.Join(capabilityExecHostCertsDir, capabilityExecRequiredCert), isFile},
+	}
+	for _, path := range bindSourcePaths {
+		if existsAndValid, err := pathExistsAndValid(path.path, path.predicate); err == nil && existsAndValid {
+			expectedAgentBinds++
+		}
+	}
 
 	if len(hostCfg.Binds) != expectedAgentBinds {
 		t.Errorf("Expected exactly %d elements to be in Binds, but was %d", expectedAgentBinds, len(hostCfg.Binds))
@@ -770,7 +784,7 @@ func TestGetCapabilityExecBinds(t *testing.T) {
 
 	testCases := []struct {
 		name          string
-		pathPredicate func(path string, predicate func(fileInfo os.FileInfo) bool) (bool, error)
+		pathPredicate func(string, func(os.FileInfo) bool) (bool, error)
 		expectedBinds []string
 	}{
 		{
@@ -826,7 +840,7 @@ func TestPathExistsAndValid(t *testing.T) {
 	testCases := []struct {
 		name      string
 		path      string
-		predicate func(fileInfo os.FileInfo) bool
+		predicate func(os.FileInfo) bool
 		expected  bool
 	}{
 		{

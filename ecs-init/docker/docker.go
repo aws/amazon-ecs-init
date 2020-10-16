@@ -443,7 +443,7 @@ func getDockerPluginDirBinds() []string {
 }
 
 // take pathPredicate as an argument for unit testing
-func getCapabilityExecBinds(pathPredicate func(path string, predicate func(fileInfo os.FileInfo) bool) (bool, error)) []string {
+func getCapabilityExecBinds(pathPredicate func(string, func(os.FileInfo) bool) (bool, error)) []string {
 	hostResourcesDir := filepath.Join(hostCapabilitiesResourcesRootDir, capabilityExecName)
 	containerResourcesDir := filepath.Join(containerCapabilitiesResourcesRootDir, capabilityExecName)
 
@@ -465,7 +465,7 @@ func getCapabilityExecBinds(pathPredicate func(path string, predicate func(fileI
 	return binds
 }
 
-func pathExistsAndValid(path string, predicate func(fileInfo os.FileInfo) bool) (bool, error) {
+func pathExistsAndValid(path string, predicate func(os.FileInfo) bool) (bool, error) {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
 		if os.IsNotExist(err) {

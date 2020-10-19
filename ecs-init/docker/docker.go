@@ -125,6 +125,8 @@ var pluginDirs = []string{
 	pluginSpecFilesUsrDir,
 }
 
+var isPathValid = defaultIsPathValid
+
 // Client enables business logic for running the Agent inside Docker
 type Client struct {
 	docker dockerclient
@@ -406,7 +408,7 @@ func (c *Client) getHostConfig(envVarsFromFiles map[string]string) *godocker.Hos
 	binds = append(binds, getDockerPluginDirBinds()...)
 
 	// only add bind mounts when the src file/directory exists on host; otherwise docker API create an empty directory on host
-	binds = append(binds, getCapabilityExecBinds(pathExistsAndValid)...)
+	binds = append(binds, getCapabilityExecBinds()...)
 
 	return createHostConfig(binds)
 }
@@ -442,8 +444,7 @@ func getDockerPluginDirBinds() []string {
 	return pluginBinds
 }
 
-// take pathPredicate as an argument for unit testing
-func getCapabilityExecBinds(pathPredicate func(string, func(os.FileInfo) bool) (bool, error)) []string {
+func getCapabilityExecBinds() []string {
 	hostResourcesDir := filepath.Join(hostCapabilitiesResourcesRootDir, capabilityExecName)
 	containerResourcesDir := filepath.Join(containerCapabilitiesResourcesRootDir, capabilityExecName)
 
@@ -452,37 +453,27 @@ func getCapabilityExecBinds(pathPredicate func(string, func(os.FileInfo) bool) (
 	// bind mount the entire /host/dependency/path/exec/bin folder for higher flexibility
 	// minimal change required to add other ssm binaries as dependency in the future (just need to be placed inside the bin directory)
 	hostBinDir := filepath.Join(hostResourcesDir, capabilityExecHostBinRelativePath)
-	if exists, err := pathPredicate(hostBinDir, isDir); err == nil && exists {
+	if isPathValid(hostBinDir, true) {
 		binds = append(binds, hostBinDir+":"+filepath.Join(containerResourcesDir, capabilityExecContainerBinRelativePath)+readOnly)
 	}
 
 	// bind mount this specific cert file for now, CertsDir and CertsFile might be changed to be configurable in the future
 	hostCert := filepath.Join(capabilityExecHostCertsDir, capabilityExecRequiredCert)
-	if exists, err := pathPredicate(hostCert, isFile); err == nil && exists {
+	if isPathValid(hostCert, false) {
 		binds = append(binds, hostCert+":"+filepath.Join(containerResourcesDir, capabilityExecContainerCertsRelativePath, capabilityExecRequiredCert)+readOnly)
 	}
 
 	return binds
 }
 
-func pathExistsAndValid(path string, predicate func(os.FileInfo) bool) (bool, error) {
+func defaultIsPathValid(path string, shouldBeDirectory bool) bool {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return false, nil
-		}
-		return false, err
+		return false
 	}
 
-	return predicate(fileInfo), nil
-}
-
-func isDir(fileInfo os.FileInfo) bool {
-	return fileInfo != nil && fileInfo.IsDir()
-}
-
-func isFile(fileInfo os.FileInfo) bool {
-	return fileInfo != nil && !fileInfo.IsDir()
+	isDirectory := fileInfo.IsDir()
+	return (isDirectory && shouldBeDirectory) || (!isDirectory && !shouldBeDirectory)
 }
 
 // nvidiaGPUDevicesPresent checks if nvidia GPU devices are present in the instance

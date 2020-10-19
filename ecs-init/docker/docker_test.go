@@ -251,20 +251,6 @@ func validateCommonCreateContainerOptions(opts godocker.CreateContainerOptions, 
 	if certDir := config.HostPKIDirPath(); certDir == "" {
 		expectedAgentBinds = expectedAgentBindsSuseUbuntuPlatform
 	}
-	// add exec binds
-	hostCapabilityExecResourcesDir := filepath.Join(hostCapabilitiesResourcesRootDir, capabilityExecName)
-	bindSourcePaths := []struct {
-		path      string
-		predicate func(os.FileInfo) bool
-	}{
-		{filepath.Join(hostCapabilityExecResourcesDir, capabilityExecHostBinRelativePath), isDir},
-		{filepath.Join(capabilityExecHostCertsDir, capabilityExecRequiredCert), isFile},
-	}
-	for _, path := range bindSourcePaths {
-		if existsAndValid, err := pathExistsAndValid(path.path, path.predicate); err == nil && existsAndValid {
-			expectedAgentBinds++
-		}
-	}
 
 	if len(hostCfg.Binds) != expectedAgentBinds {
 		t.Errorf("Expected exactly %d elements to be in Binds, but was %d", expectedAgentBinds, len(hostCfg.Binds))
@@ -770,7 +756,46 @@ func TestGetDockerSocketBind(t *testing.T) {
 	}
 }
 
+func TestStartAgentWithExecBinds(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	containerID := "container id"
+	isPathValid = func(path string, isDir bool) bool {
+		return true
+	}
+	expectedAgentBinds += 2
+	defer func() {
+		expectedAgentBinds = expectedAgentBindsUnspecifiedPlatform
+		isPathValid = defaultIsPathValid
+	}()
+
+	mockFS := NewMockfileSystem(mockCtrl)
+	mockDocker := NewMockdockerclient(mockCtrl)
+
+	mockFS.EXPECT().ReadFile(config.InstanceConfigFile()).Return(nil, errors.New("not found")).AnyTimes()
+	mockFS.EXPECT().ReadFile(config.AgentConfigFile()).Return(nil, errors.New("not found")).AnyTimes()
+	mockDocker.EXPECT().CreateContainer(gomock.Any()).Do(func(opts godocker.CreateContainerOptions) {
+		validateCommonCreateContainerOptions(opts, t)
+	}).Return(&godocker.Container{
+		ID: containerID,
+	}, nil)
+	mockDocker.EXPECT().StartContainer(containerID, nil)
+	mockDocker.EXPECT().WaitContainer(containerID)
+
+	client := &Client{
+		docker: mockDocker,
+		fs:     mockFS,
+	}
+
+	_, err := client.StartAgent()
+	assert.NoError(t, err)
+}
+
 func TestGetCapabilityExecBinds(t *testing.T) {
+	defer func() {
+		isPathValid = defaultIsPathValid
+	}()
 	hostCapabilityExecResourcesDir := filepath.Join(hostCapabilitiesResourcesRootDir, capabilityExecName)
 	containerCapabilityExecResourcesDir := filepath.Join(containerCapabilitiesResourcesRootDir, capabilityExecName)
 
@@ -783,14 +808,14 @@ func TestGetCapabilityExecBinds(t *testing.T) {
 	containerCertsFile := filepath.Join(containerCapabilityExecResourcesDir, capabilityExecContainerCertsRelativePath, capabilityExecRequiredCert)
 
 	testCases := []struct {
-		name          string
-		pathPredicate func(string, func(os.FileInfo) bool) (bool, error)
-		expectedBinds []string
+		name            string
+		testIsPathValid func(string, bool) bool
+		expectedBinds   []string
 	}{
 		{
 			name: "all paths valid",
-			pathPredicate: func(path string, predicate func(fileInfo os.FileInfo) bool) (bool, error) {
-				return true, nil
+			testIsPathValid: func(path string, isDir bool) bool {
+				return true
 			},
 			expectedBinds: []string{
 				hostBinDir + ":" + containerBinDir + readOnly,
@@ -799,8 +824,8 @@ func TestGetCapabilityExecBinds(t *testing.T) {
 		},
 		{
 			name: "only ssm-agent bin path valid",
-			pathPredicate: func(path string, predicate func(fileInfo os.FileInfo) bool) (bool, error) {
-				return path == hostBinDir, nil
+			testIsPathValid: func(path string, isDir bool) bool {
+				return path == hostBinDir
 			},
 			expectedBinds: []string{
 				hostBinDir + ":" + containerBinDir + readOnly,
@@ -808,149 +833,80 @@ func TestGetCapabilityExecBinds(t *testing.T) {
 		},
 		{
 			name: "no path valid",
-			pathPredicate: func(path string, predicate func(fileInfo os.FileInfo) bool) (bool, error) {
-				return false, nil
+			testIsPathValid: func(path string, isDir bool) bool {
+				return false
 			},
 			expectedBinds: nil,
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			binds := getCapabilityExecBinds(tc.pathPredicate)
+			isPathValid = tc.testIsPathValid
+			binds := getCapabilityExecBinds()
 			assert.Equal(t, tc.expectedBinds, binds)
 		})
 	}
 }
 
-func TestPathExistsAndValid(t *testing.T) {
+func TestDefaultIsPathValid(t *testing.T) {
 	rootDir, err := ioutil.TempDir(os.TempDir(), testTempDirPrefix)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	defer os.RemoveAll(rootDir)
 
 	file, err := ioutil.TempFile(rootDir, "file")
-	notExistingFilename := filepath.Join(rootDir, "file-not-existing")
-	alwaysValidPredicate := func(fileInfo os.FileInfo) bool {
-		return true
+	if err != nil {
+		t.Fatal(err)
 	}
-	alwaysInvalidPredicate := func(fileInfo os.FileInfo) bool {
-		return false
-	}
+	notExistingPath := filepath.Join(rootDir, "not-existing")
 	testCases := []struct {
-		name      string
-		path      string
-		predicate func(os.FileInfo) bool
-		expected  bool
+		name              string
+		path              string
+		shouldBeDirectory bool
+		expected          bool
 	}{
 		{
-			name:      "always return false if file does not exist",
-			path:      notExistingFilename,
-			predicate: alwaysValidPredicate,
-			expected:  false,
+			name:              "return false if directory does not exist",
+			path:              notExistingPath,
+			shouldBeDirectory: true,
+			expected:          false,
 		},
 		{
-			name:      "if file exists, return predicate result (true)",
-			path:      file.Name(),
-			predicate: alwaysValidPredicate,
-			expected:  true,
+			name:              "return false if false does not exist",
+			path:              notExistingPath,
+			shouldBeDirectory: false,
+			expected:          false,
 		},
 		{
-			name:      "if file exists, return predicate result (false)",
-			path:      file.Name(),
-			predicate: alwaysInvalidPredicate,
-			expected:  false,
+			name:              "if directory exists, return shouldBeDirectory",
+			path:              rootDir,
+			shouldBeDirectory: true,
+			expected:          true,
+		},
+		{
+			name:              "if directory exists, return shouldBeDirectory",
+			path:              rootDir,
+			shouldBeDirectory: false,
+			expected:          false,
+		},
+		{
+			name:              "if file exists, return !shouldBeDirectory",
+			path:              file.Name(),
+			shouldBeDirectory: false,
+			expected:          true,
+		},
+		{
+			name:              "if file exists, return !shouldBeDirectory",
+			path:              file.Name(),
+			shouldBeDirectory: true,
+			expected:          false,
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			result, err := pathExistsAndValid(tc.path, tc.predicate)
-			if err != nil {
-				t.Fatal(err)
-			}
+			result := defaultIsPathValid(tc.path, tc.shouldBeDirectory)
 			assert.Equal(t, result, tc.expected)
 		})
 	}
-}
-
-func TestIsDir(t *testing.T) {
-	rootDir, err := ioutil.TempDir(os.TempDir(), testTempDirPrefix)
-	if err != nil {
-		t.Error(err)
-	}
-	defer os.RemoveAll(rootDir)
-
-	dir, err := ioutil.TempDir(rootDir, "dir")
-	file, err := ioutil.TempFile(rootDir, "file")
-
-	testCases := []struct {
-		name     string
-		path     string
-		expected bool
-	}{
-		{
-			name:     "should return true for directory",
-			path:     dir,
-			expected: true,
-		},
-		{
-			name:     "should return false for file",
-			path:     file.Name(),
-			expected: false,
-		},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			fileInfo, err := os.Stat(tc.path)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			assert.Equal(t, tc.expected, isDir(fileInfo))
-		})
-	}
-
-	// null check
-	assert.Equal(t, false, isDir(nil))
-}
-
-func TestIsFile(t *testing.T) {
-	rootDir, err := ioutil.TempDir(os.TempDir(), testTempDirPrefix)
-	if err != nil {
-		t.Error(err)
-	}
-	defer os.RemoveAll(rootDir)
-
-	dir, err := ioutil.TempDir(rootDir, "dir")
-	file, err := ioutil.TempFile(rootDir, "file")
-
-	testCases := []struct {
-		name     string
-		path     string
-		expected bool
-	}{
-		{
-			name:     "should return false for directory",
-			path:     dir,
-			expected: false,
-		},
-		{
-			name:     "should return true for file",
-			path:     file.Name(),
-			expected: true,
-		},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			fileInfo, err := os.Stat(tc.path)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			assert.Equal(t, tc.expected, isFile(fileInfo))
-		})
-	}
-
-	// null check
-	assert.Equal(t, false, isFile(nil))
 }

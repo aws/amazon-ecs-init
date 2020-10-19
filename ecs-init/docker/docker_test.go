@@ -801,6 +801,36 @@ func TestStartAgentWithExecBinds(t *testing.T) {
 	mockFS.EXPECT().ReadFile(config.AgentConfigFile()).Return(nil, errors.New("not found")).AnyTimes()
 	mockDocker.EXPECT().CreateContainer(gomock.Any()).Do(func(opts godocker.CreateContainerOptions) {
 		validateCommonCreateContainerOptions(opts, t)
+
+		// verify that exec binds are added
+		hostCapabilityExecResourcesDir := filepath.Join(hostCapabilitiesResourcesRootDir, capabilityExecName)
+		containerCapabilityExecResourcesDir := filepath.Join(containerCapabilitiesResourcesRootDir, capabilityExecName)
+
+		// binaries
+		hostBinDir := filepath.Join(hostCapabilityExecResourcesDir, capabilityExecHostBinRelativePath)
+		containerBinDir := filepath.Join(containerCapabilityExecResourcesDir, capabilityExecContainerBinRelativePath)
+
+		// certs
+		hostCertsFile := filepath.Join(capabilityExecHostCertsDir, capabilityExecRequiredCert)
+		containerCertsFile := filepath.Join(containerCapabilityExecResourcesDir, capabilityExecContainerCertsRelativePath, capabilityExecRequiredCert)
+
+		expectedBinds := []string{
+			hostBinDir + ":" + containerBinDir + readOnly,
+			hostCertsFile + ":" + containerCertsFile + readOnly,
+		}
+
+		for _, expectedBind := range expectedBinds {
+			added := false
+			agentBinds := opts.HostConfig.Binds
+			for _, bind := range agentBinds {
+				if bind == expectedBind {
+					added = true
+					break
+				}
+			}
+
+			assert.True(t, added, "%v should be added to HostConfig.Binds", expectedBind)
+		}
 	}).Return(&godocker.Container{
 		ID: containerID,
 	}, nil)

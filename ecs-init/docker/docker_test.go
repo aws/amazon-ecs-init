@@ -186,6 +186,12 @@ func TestRemoveExistingAgentContainer(t *testing.T) {
 func TestStartAgentNoEnvFile(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
+	isPathValid = func(path string, isDir bool) bool {
+		return false
+	}
+	defer func() {
+		isPathValid = defaultIsPathValid
+	}()
 
 	containerID := "container id"
 
@@ -316,6 +322,12 @@ func expectKey(key string, input map[string]struct{}, t *testing.T) {
 func TestStartAgentEnvFile(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
+	isPathValid = func(path string, isDir bool) bool {
+		return false
+	}
+	defer func() {
+		isPathValid = defaultIsPathValid
+	}()
 
 	envFile := "\nAGENT_TEST_VAR=val\nAGENT_TEST_VAR2=val2\n"
 	containerID := "container id"
@@ -354,6 +366,12 @@ func TestStartAgentEnvFile(t *testing.T) {
 func TestStartAgentWithGPUConfig(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
+	isPathValid = func(path string, isDir bool) bool {
+		return false
+	}
+	defer func() {
+		isPathValid = defaultIsPathValid
+	}()
 
 	envFile := "\nECS_ENABLE_GPU_SUPPORT=true\n"
 	containerID := "container id"
@@ -407,6 +425,12 @@ func TestStartAgentWithGPUConfig(t *testing.T) {
 func TestStartAgentWithGPUConfigNoDevices(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
+	isPathValid = func(path string, isDir bool) bool {
+		return false
+	}
+	defer func() {
+		isPathValid = defaultIsPathValid
+	}()
 
 	envFile := "\nECS_ENABLE_GPU_SUPPORT=true\n"
 	containerID := "container id"

@@ -108,15 +108,17 @@ const (
 	iptablesLib64Dir    = "/lib64"
 	iptablesUsrLib64Dir = "/usr/lib64"
 
-	hostCapabilitiesResourcesRootDir      = "/var/lib/ecs"
+	hostCapabilitiesResourcesRootDir      = "/var/lib/ecs/deps"
 	containerCapabilitiesResourcesRootDir = "/capabilities"
 
-	capabilityExecName                       = "exec"
-	capabilityExecHostBinRelativePath        = "ssm-agent/linux_amd64"
-	capabilityExecContainerBinRelativePath   = "bin"
-	capabilityExecHostCertsDir               = "/etc/pki/ca-trust/extracted/pem"
-	capabilityExecContainerCertsRelativePath = "certs"
-	capabilityExecRequiredCert               = "tls-ca-bundle.pem"
+	capabilityExecName                        = "execute-command"
+	capabilityExecHostBinRelativePath         = "bin"
+	capabilityExecContainerBinRelativePath    = "bin"
+	capabilityExecHostConfigRelativePath      = "config"
+	capabilityExecContainerConfigRelativePath = "config"
+	capabilityExecHostCertsDir                = "/etc/pki/ca-trust/extracted/pem"
+	capabilityExecContainerCertsRelativePath  = "certs"
+	capabilityExecRequiredCert                = "tls-ca-bundle.pem"
 
 	execAgentLogRelativePath = "/exec"
 )
@@ -453,17 +455,26 @@ func getCapabilityExecBinds() []string {
 
 	var binds []string
 
-	// bind mount the entire /host/dependency/path/exec/bin folder for higher flexibility
-	// minimal change required to add other ssm binaries as dependency in the future (just need to be placed inside the bin directory)
+	// bind mount the entire /host/dependency/path/execute-command/bin folder
 	hostBinDir := filepath.Join(hostResourcesDir, capabilityExecHostBinRelativePath)
 	if isPathValid(hostBinDir, true) {
-		binds = append(binds, hostBinDir+":"+filepath.Join(containerResourcesDir, capabilityExecContainerBinRelativePath)+readOnly)
+		binds = append(binds,
+			hostBinDir+":"+filepath.Join(containerResourcesDir, capabilityExecContainerBinRelativePath)+readOnly)
 	}
 
-	// bind mount this specific cert file for now, CertsDir and CertsFile might be changed to be configurable in the future
+	// bind mount the entire /host/dependency/path/execute-command/config folder
+	// in read-write mode to allow ecs-agent to write config files to host file system
+	hostConfigDir := filepath.Join(hostResourcesDir, capabilityExecHostConfigRelativePath)
+	if isPathValid(hostConfigDir, true) {
+		binds = append(binds,
+			hostConfigDir+":"+filepath.Join(containerResourcesDir, capabilityExecContainerConfigRelativePath))
+	}
+
+	// bind mount this specific cert file for now
 	hostCert := filepath.Join(capabilityExecHostCertsDir, capabilityExecRequiredCert)
 	if isPathValid(hostCert, false) {
-		binds = append(binds, hostCert+":"+filepath.Join(containerResourcesDir, capabilityExecContainerCertsRelativePath, capabilityExecRequiredCert)+readOnly)
+		binds = append(binds,
+			hostCert+":"+filepath.Join(containerResourcesDir, capabilityExecContainerCertsRelativePath, capabilityExecRequiredCert)+readOnly)
 	}
 
 	return binds

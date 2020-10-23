@@ -109,16 +109,14 @@ const (
 	iptablesUsrLib64Dir = "/usr/lib64"
 
 	hostCapabilitiesResourcesRootDir      = "/var/lib/ecs/deps"
-	containerCapabilitiesResourcesRootDir = "/capabilities"
+	containerCapabilitiesResourcesRootDir = "/managed-agents"
 
-	capabilityExecName                        = "execute-command"
-	capabilityExecHostBinRelativePath         = "bin"
-	capabilityExecContainerBinRelativePath    = "bin"
-	capabilityExecHostConfigRelativePath      = "config"
-	capabilityExecContainerConfigRelativePath = "config"
-	capabilityExecHostCertsDir                = "/etc/pki/ca-trust/extracted/pem"
-	capabilityExecContainerCertsRelativePath  = "certs"
-	capabilityExecRequiredCert                = "tls-ca-bundle.pem"
+	capabilityExecName               = "execute-command"
+	capabilityExecBinRelativePath    = "bin"
+	capabilityExecConfigRelativePath = "config"
+	capabilityExecCertsRelativePath  = "certs"
+	capabilityExecHostCertsDir       = "/etc/pki/ca-trust/extracted/pem"
+	capabilityExecRequiredCert       = "tls-ca-bundle.pem"
 
 	execAgentLogRelativePath = "/exec"
 )
@@ -456,25 +454,25 @@ func getCapabilityExecBinds() []string {
 	var binds []string
 
 	// bind mount the entire /host/dependency/path/execute-command/bin folder
-	hostBinDir := filepath.Join(hostResourcesDir, capabilityExecHostBinRelativePath)
+	hostBinDir := filepath.Join(hostResourcesDir, capabilityExecBinRelativePath)
 	if isPathValid(hostBinDir, true) {
 		binds = append(binds,
-			hostBinDir+":"+filepath.Join(containerResourcesDir, capabilityExecContainerBinRelativePath)+readOnly)
+			hostBinDir+":"+filepath.Join(containerResourcesDir, capabilityExecBinRelativePath)+readOnly)
 	}
 
 	// bind mount the entire /host/dependency/path/execute-command/config folder
 	// in read-write mode to allow ecs-agent to write config files to host file system
-	hostConfigDir := filepath.Join(hostResourcesDir, capabilityExecHostConfigRelativePath)
+	hostConfigDir := filepath.Join(hostResourcesDir, capabilityExecConfigRelativePath)
 	if isPathValid(hostConfigDir, true) {
 		binds = append(binds,
-			hostConfigDir+":"+filepath.Join(containerResourcesDir, capabilityExecContainerConfigRelativePath))
+			hostConfigDir+":"+filepath.Join(containerResourcesDir, capabilityExecConfigRelativePath))
 	}
 
 	// bind mount this specific cert file for now
 	hostCert := filepath.Join(capabilityExecHostCertsDir, capabilityExecRequiredCert)
 	if isPathValid(hostCert, false) {
 		binds = append(binds,
-			hostCert+":"+filepath.Join(containerResourcesDir, capabilityExecContainerCertsRelativePath, capabilityExecRequiredCert)+readOnly)
+			hostCert+":"+filepath.Join(containerResourcesDir, capabilityExecCertsRelativePath, capabilityExecRequiredCert)+readOnly)
 	}
 
 	return binds

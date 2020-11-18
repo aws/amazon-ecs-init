@@ -19,6 +19,7 @@ require (
 	github.com/docker/go-plugins-helpers v0.0.0-20181025120712-1e6269c305b8
 	github.com/docker/go-units v0.3.2 // indirect
 	github.com/fsouza/go-dockerclient v0.0.0-20170830181106-98edf3edfae6
+	github.com/fzipp/gocyclo v0.3.1
 	github.com/golang/mock v1.3.1-0.20190508161146-9fa652df1129
 	github.com/google/go-cmp v0.5.2 // indirect
 	github.com/opencontainers/go-digest v1.0.0-rc0.0.20170510163354-eaa60544f31c // indirect
@@ -27,4 +28,6 @@ require (
 	github.com/pkg/errors v0.8.1-0.20170505043639-c605e284fe17
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/testify v1.2.2
+	golang.org/x/tools v0.0.0-20200410194907-79a7a3126eef
+	honnef.co/go/tools v0.0.1-2020.1.6
 )

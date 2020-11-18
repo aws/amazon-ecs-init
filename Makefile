@@ -109,12 +109,7 @@ ubuntu-trusty:
 	cd BUILDROOT && debuild $(shell [ "$(DEB_SIGN)" -ne "0" ] || echo "-uc -us")
 
 get-deps:
-	go get golang.org/x/tools/cover
-	go get golang.org/x/tools/cmd/cover
-	go get github.com/fzipp/gocyclo/cmd/gocyclo
-	go get golang.org/x/tools/cmd/goimports
-	go get github.com/golang/mock/mockgen
-	go get honnef.co/go/tools/cmd/staticcheck
+	cd ecs-init && go list -f '{{ join .Imports "\n" }}' tools.go | xargs -tI % go install %
 
 clean:
 	-rm -f ecs-init.spec

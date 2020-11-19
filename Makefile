@@ -20,42 +20,36 @@ dev:
 	./scripts/gobuild.sh dev
 
 generate:
-	PATH=$(PATH):$(shell pwd)/scripts go generate -v ./...
+	PATH=$(PATH):$(shell pwd)/scripts && cd ecs-init && $(MAKE) generate
 
 static:
 	./scripts/gobuild.sh
 
 govet:
-	go vet ./...
+	cd ecs-init && $(MAKE) govet
 
 test:
-	go test -count=1 -short -v -coverprofile cover.out ./...
-	go tool cover -func cover.out > coverprofile.out
+	cd ecs-init && $(MAKE) test
 
 .PHONY: analyze-cover-profile
-analyze-cover-profile: coverprofile.out
+analyze-cover-profile: ./ecs-init/coverprofile.out
 	./scripts/analyze-cover-profile
-
-# all .go files in the ecs-init
-GOFILES:=$(shell go list -f '{{$$p := .}}{{range $$f := .GoFiles}}{{$$p.Dir}}/{{$$f}} {{end}}' ./ecs-init/...)
 
 .PHONY: gocyclo
 gocyclo:
-	# Run gocyclo over all .go files
-	gocyclo -over 12 ${GOFILES}
+	cd ecs-init && $(MAKE) gocyclo
 
-GOFMTFILES:=$(shell find ./ecs-init -not -path './ecs-init/vendor/*' -type f -iregex '.*\.go')
+.PHONY: goimports
+goimports:
+	@cd ecs-init && $(MAKE) goimports
 
 .PHONY: importcheck
 importcheck:
-	$(eval DIFFS:=$(shell goimports -l $(GOFMTFILES)))
-	@if [ -n "$(DIFFS)" ]; then echo "Files incorrectly formatted. Fix formatting by running goimports:"; echo "$(DIFFS)"; exit 1; fi
+	cd ecs-init && $(MAKE) importcheck
 
 .PHONY: static-check
-static-check: gocyclo govet importcheck
-	# use default checks of staticcheck tool, except style checks (-ST*)
-	# https://github.com/dominikh/go-tools/tree/master/cmd/staticcheck
-	staticcheck -tests=false -checks "inherit,-ST*" ./ecs-init/...
+static-check:
+	cd ecs-init && $(MAKE) static-check
 
 test-in-docker:
 	docker build -f scripts/dockerfiles/test.dockerfile -t "amazon/amazon-ecs-init-test:make" .
@@ -127,5 +121,5 @@ clean:
 	-rm -rf ./x86_64
 	-rm -f ./amazon-ecs-init_${VERSION}*
 	-rm -f .srpm-done .rpm-done
-	-rm -f cover.out
-	-rm -f coverprofile.out
+	-rm -f ./ecs-init/cover.out
+	-rm -f ./ecs-init/coverprofile.out

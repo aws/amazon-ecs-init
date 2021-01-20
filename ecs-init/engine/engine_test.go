@@ -260,7 +260,7 @@ func TestStartSupervisedExitsWhenTerminalFailure(t *testing.T) {
 		mockDocker.EXPECT().RemoveExistingAgentContainer(),
 		mockDocker.EXPECT().StartAgent().Return(1, nil),
 		mockDocker.EXPECT().RemoveExistingAgentContainer(),
-		mockDocker.EXPECT().StartAgent().Return(terminalFailureAgentExitCode, nil),
+		mockDocker.EXPECT().StartAgent().Return(TerminalFailureAgentExitCode, nil),
 	)
 
 	engine := &Engine{

@@ -19,3 +19,4 @@ ecs.service
 .idea/
 cover.out
 coverprofile.out
+*.DS_Store

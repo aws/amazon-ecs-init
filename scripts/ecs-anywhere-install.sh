@@ -249,6 +249,7 @@ install-ssm-agent() {
             return
         fi
     else
+        ssm-agent-signature-verify
         case "$PKG_MANAGER" in
         dnf)
             dnf install -y "https://s3.$REGION.amazonaws.com/amazon-ssm-$REGION/latest/linux_$ARCH_ALT/amazon-ssm-agent.rpm"
@@ -257,24 +258,57 @@ install-ssm-agent() {
             yum install -y "https://s3.$REGION.amazonaws.com/amazon-ssm-$REGION/latest/linux_$ARCH_ALT/amazon-ssm-agent.rpm"
             ;;
         apt)
-            local dir
-            dir="$(mktemp -d)"
-            curl -o "$dir/ssm-agent.deb" "https://s3.$REGION.amazonaws.com/amazon-ssm-$REGION/latest/debian_$ARCH_ALT/amazon-ssm-agent.deb"
             dpkg -i "$dir/ssm-agent.deb"
-            rm -rf "$dir"
             ;;
         zypper)
-            local dir
-            dir="$(mktemp -d)"
-            curl -o "$dir/ssm-agent.rpm" "https://s3.$REGION.amazonaws.com/amazon-ssm-$REGION/latest/linux_$ARCH_ALT/amazon-ssm-agent.rpm"
             rpm --install "$dir/ssm-agent.rpm"
             ;;
         esac
     fi
+    rm -rf "$dir"
     # register the instance
     register-ssm-agent
 
     ok
+}
+
+ssm-agent-signature-verify() {
+    echo "Verifying the signature of SSM Agent"
+
+    local dir
+    dir="$(mktemp -d)"
+
+    curl -o "$dir/amazon-ssm-agent.gpg" "https://github.com/aws/amazon-ecs-init/blob/master/scripts/amazon-ssm-agent.gpg"
+    gpg --import "$dir/amazon-ssm-agent.gpg" &> tempOut
+    IFS=' '
+    read -ra ARR <<< "$(cat tempOut)"
+    fingerprint=$(gpg --fingerprint "${ARR[2]%?}" | sed -n 2p | sed 's/ *$//g')
+    if [ ! "${fingerprint}" == "8108 A07A 9EBE 248E 3F1C 63F2 54F4 F56E 693E CA21" ]; then
+        echo "SSM Agent GPG public key fingerprint verification fail. Stop the installation of the SSM Agent. Please contact AWS Support."
+        fail
+    fi
+    rm tempOut
+
+    case "$PKG_MANAGER" in
+    dnf | yum | zypper)
+        curl -o "$dir/ssm-agent.rpm" "https://s3.$REGION.amazonaws.com/amazon-ssm-$REGION/latest/linux_$ARCH_ALT/amazon-ssm-agent.rpm"
+        curl -o "$dir/ssm-agent.rpm.sig" "https://s3.$REGION.amazonaws.com/amazon-ssm-$REGION/latest/linux_$ARCH_ALT/amazon-ssm-agent.rpm.sig"
+        gpg --verify "$dir/ssm-agent.rpm.sig" "$dir/ssm-agent.rpm" &> verifyOut
+        ;;
+    apt)
+        curl -o "$dir/ssm-agent.deb" "https://s3.$REGION.amazonaws.com/amazon-ssm-$REGION/latest/debian_$ARCH_ALT/amazon-ssm-agent.deb"
+        curl -o "$dir/ssm-agent.deb.sig" "https://s3.$REGION.amazonaws.com/amazon-ssm-$REGION/latest/debian_$ARCH_ALT/amazon-ssm-agent.deb.sig"
+        gpg --verify "$dir/ssm-agent.deb.sig" "$dir/ssm-agent.deb" &> verifyOut
+        ;;
+    esac
+
+    if grep -Fxq "BAD signature" verifyOut; then
+        echo "SSM Agent GPG verification fail. Stop the installation of the SSM Agent. Please contact AWS Support."
+        fail
+    else
+        echo "SSM Agent GPG verification passed. Install the SSM Agent."
+    fi
+    rm verifyOut
 }
 
 # order of operations:
@@ -435,8 +469,14 @@ install-ecs-agent() {
     ok
 }
 
+show-license() {
+  echo "This setup artifact uses Apache License 2.0."
+  echo "For more details, see https://github.com/aws/amazon-ecs-agent/blob/master/LICENSE"
+}
+
 if ! $SKIP_REGISTRATION; then
     install-ssm-agent
 fi
 install-docker "$DOCKER_SOURCE"
 install-ecs-agent
+show-license

@@ -129,11 +129,13 @@ fi
 S3_BUCKET="amazon-ecs-agent-packages-preview"
 RPM_PKG_NAME="amazon-ecs-init-$ECS_VERSION.$ARCH.rpm"
 DEB_PKG_NAME="amazon-ecs-init-$ECS_VERSION.$ARCH_ALT.deb"
+
+# TODO [Update before release] Change urls to be region specific buckets
 if [ -z "$RPM_URL" ]; then
-    RPM_URL="https://$S3_BUCKET.s3.amazonaws.com/$RPM_PKG_NAME"
+    RPM_URL="https://ecs-init-packages-testing.s3.amazonaws.com/amazon-ecs-init-latest.$ARCH_ALT.rpm"
 fi
 if [ -z "$DEB_URL" ]; then
-    DEB_URL="https://$S3_BUCKET.s3.amazonaws.com/$DEB_PKG_NAME"
+    DEB_URL="https://ecs-init-packages-testing.s3.amazonaws.com/amazon-ecs-init-latest.$ARCH_ALT.deb"
 fi
 
 # source /etc/os-release to get the VERSION_ID and ID fields
@@ -249,6 +251,8 @@ install-ssm-agent() {
             return
         fi
     else
+        local dir
+        dir="$(mktemp -d)"
         ssm-agent-signature-verify
         case "$PKG_MANAGER" in
         dnf)
@@ -264,8 +268,8 @@ install-ssm-agent() {
             rpm --install "$dir/ssm-agent.rpm"
             ;;
         esac
+        rm -rf "$dir"
     fi
-    rm -rf "$dir"
     # register the instance
     register-ssm-agent
 
@@ -275,40 +279,40 @@ install-ssm-agent() {
 ssm-agent-signature-verify() {
     echo "Verifying the signature of SSM Agent"
 
-    local dir
-    dir="$(mktemp -d)"
-
-    curl -o "$dir/amazon-ssm-agent.gpg" "https://github.com/aws/amazon-ecs-init/blob/master/scripts/amazon-ssm-agent.gpg"
-    gpg --import "$dir/amazon-ssm-agent.gpg" &> tempOut
+    # TODO [Update before release] Change this url to main repo master branch
+    curl -o "$dir/amazon-ssm-agent.gpg" "https://github.com/Realmonia/amazon-ecs-init/blob/ssmGpg/scripts/amazon-ssm-agent.gpg"
+    gpg --import "$dir/amazon-ssm-agent.gpg" &> "$dir/tempOut"
     IFS=' '
-    read -ra ARR <<< "$(cat tempOut)"
+    read -ra ARR <<< "$(cat "$dir/tempOut")"
     fingerprint=$(gpg --fingerprint "${ARR[2]%?}" | sed -n 2p | sed 's/ *$//g')
-    if [ ! "${fingerprint}" == "8108 A07A 9EBE 248E 3F1C 63F2 54F4 F56E 693E CA21" ]; then
+    if [ "${fingerprint//[[:blank:]]/}" != "8108A07A9EBE248E3F1C63F254F4F56E693ECA21" ]; then
         echo "SSM Agent GPG public key fingerprint verification fail. Stop the installation of the SSM Agent. Please contact AWS Support."
         fail
     fi
-    rm tempOut
+    rm "$dir/tempOut"
 
     case "$PKG_MANAGER" in
     dnf | yum | zypper)
         curl -o "$dir/ssm-agent.rpm" "https://s3.$REGION.amazonaws.com/amazon-ssm-$REGION/latest/linux_$ARCH_ALT/amazon-ssm-agent.rpm"
         curl -o "$dir/ssm-agent.rpm.sig" "https://s3.$REGION.amazonaws.com/amazon-ssm-$REGION/latest/linux_$ARCH_ALT/amazon-ssm-agent.rpm.sig"
-        gpg --verify "$dir/ssm-agent.rpm.sig" "$dir/ssm-agent.rpm" &> verifyOut
+        gpg --verify "$dir/ssm-agent.rpm.sig" "$dir/ssm-agent.rpm" &> "$dir/verifyOut"
         ;;
     apt)
         curl -o "$dir/ssm-agent.deb" "https://s3.$REGION.amazonaws.com/amazon-ssm-$REGION/latest/debian_$ARCH_ALT/amazon-ssm-agent.deb"
         curl -o "$dir/ssm-agent.deb.sig" "https://s3.$REGION.amazonaws.com/amazon-ssm-$REGION/latest/debian_$ARCH_ALT/amazon-ssm-agent.deb.sig"
-        gpg --verify "$dir/ssm-agent.deb.sig" "$dir/ssm-agent.deb" &> verifyOut
+        gpg --verify "$dir/ssm-agent.deb.sig" "$dir/ssm-agent.deb" &> "$dir/verifyOut"
         ;;
     esac
 
-    if grep -Fxq "BAD signature" verifyOut; then
+    if grep -Fxq "BAD signature" "$dir/verifyOut"; then
         echo "SSM Agent GPG verification fail. Stop the installation of the SSM Agent. Please contact AWS Support."
         fail
     else
         echo "SSM Agent GPG verification passed. Install the SSM Agent."
     fi
-    rm verifyOut
+    rm "$dir/verifyOut"
+
+    ok
 }
 
 # order of operations:
@@ -413,29 +417,23 @@ install-ecs-agent() {
         return
     fi
 
+    local dir
+    dir="$(mktemp -d)"
     case "$PKG_MANAGER" in
     apt)
-        local dir
-        dir="$(mktemp -d)"
         curl -o "$dir/$DEB_PKG_NAME" "$DEB_URL"
         if $CHECK_SHA; then
-            pushd $dir
-            curl -o "$DEB_PKG_NAME.sha256" "$DEB_URL.sha256"
-            sha256sum -c "$DEB_PKG_NAME.sha256"
-            popd
+            curl -o "$dir/$DEB_PKG_NAME.asc" "$DEB_URL.asc"
+            ecs-init-signature-verify "$dir/$DEB_PKG_NAME.asc" "$dir/$DEB_PKG_NAME"
         fi
         apt install -y "$dir/$DEB_PKG_NAME"
         rm -rf "$dir"
         ;;
     dnf | yum | zypper)
-        local dir
-        dir="$(mktemp -d)"
         curl -o "$dir/$RPM_PKG_NAME" "$RPM_URL"
         if $CHECK_SHA; then
-            pushd $dir
-            curl -o "$RPM_PKG_NAME.sha256" "$RPM_URL.sha256"
-            sha256sum -c "$RPM_PKG_NAME.sha256"
-            popd
+            curl -o "$dir/$RPM_PKG_NAME.asc" "$RPM_URL.asc"
+            ecs-init-signature-verify "$dir/$RPM_PKG_NAME.asc" "$dir/$RPM_PKG_NAME"
         fi
         local args="-y"
         if [[ "$PKG_MANAGER" == "zypper" ]]; then
@@ -469,6 +467,47 @@ install-ecs-agent() {
     ok
 }
 
+ecs-init-signature-verify() {
+    echo "Verifying the signature of ECS Init Artifact"
+
+    #TODO [Update before release] Update links here to use prod urls (or urls specified by $DEB_URL or $RPM_URL)
+    curl -o "$dir/amazon-ecs-init.gpg" "https://ecs-init-packages-testing.s3.amazonaws.com/amazon-ecs-public-key.gpg"
+    gpg --import "$dir/amazon-ecs-init.gpg"
+
+    gpg --verify "$1" "$2" &> "$dir/verifyOut"
+
+    if grep -Fxq "BAD signature" "$dir/verifyOut"; then
+        echo "ECS Init GPG verification fail. Stop the installation of the ECS Agent. Please contact AWS Support."
+        fail
+    else
+        echo "ECS Init GPG verification passed. Install the ECS Agent."
+    fi
+    rm "$dir/verifyOut"
+
+    ok
+}
+
+verify-agent() {
+    retryLimit=10
+    i=0
+    success=0
+    for ((i = 0 ; i < retryLimit ; i++))
+    do
+        curlResult="$(timeout 10 curl -s http://localhost:51678/v1/metadata | jq .ContainerInstanceArn)"
+        echo "container instance arn: $curlResult"
+        if [ ! "$curlResult" == "null" ] && [ -n "$curlResult" ]; then
+            success=1
+            break
+        fi
+    done
+    if [ $success == 0 ]; then
+        echo "ECS Agent verification failed. Please check logs at /var/log/ecs/ecs-agent.log"
+        fail
+    else
+        echo "ping ECS Agent registered successfully!"
+    fi
+}
+
 show-license() {
   echo "This setup artifact uses Apache License 2.0."
   echo "For more details, see https://github.com/aws/amazon-ecs-agent/blob/master/LICENSE"
@@ -479,4 +518,9 @@ if ! $SKIP_REGISTRATION; then
 fi
 install-docker "$DOCKER_SOURCE"
 install-ecs-agent
+verify-agent
 show-license
+
+# TODO [Update before release] Provide hyperlink to ecs cluster console if succeeded and to troubleshoot page if failed
+#show-link-to-console() {}
+#show-link-to-console

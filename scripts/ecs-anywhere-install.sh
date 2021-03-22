@@ -477,11 +477,6 @@ ecs-init-signature-verify() {
     ok
 }
 
-show-link-to-console() {
-    echo ""
-    echo "You can visit "
-}
-
 verify-agent() {
     retryLimit=10
     i=0

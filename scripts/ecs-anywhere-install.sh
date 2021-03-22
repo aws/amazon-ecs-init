@@ -126,11 +126,11 @@ else
     fail
 fi
 
-S3_BUCKET="ecs-init-packages-testing"
+# TODO [Update before release] Change to prod regional buckets
+S3_BUCKET="amazon-ecs-agent-shadow-$REGION"
 RPM_PKG_NAME="amazon-ecs-init-$ECS_VERSION.$ARCH.rpm"
 DEB_PKG_NAME="amazon-ecs-init-$ECS_VERSION.$ARCH_ALT.deb"
 
-# TODO [Update before release] Change urls to be region specific buckets
 if [ -z "$RPM_URL" ]; then
     RPM_URL="https://$S3_BUCKET.s3.amazonaws.com/$RPM_PKG_NAME"
 fi

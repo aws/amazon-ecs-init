@@ -11,8 +11,7 @@
 # CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and
 # limitations under the License.
-VERSION := $(shell git describe --tags | sed -e 's/v//' -e 's/-.*//')
-DEB_SIGN ?= 1
+VERSION = $(shell cat ecs-init/ECSVERSION)
 
 .PHONY: dev generate lint static test build-mock-images sources rpm srpm govet
 
@@ -24,10 +23,10 @@ generate:
 
 PLATFORM:=$(shell uname -s)
 ifeq (${PLATFORM},Linux)
-                dep_arch=linux-386
-        else ifeq (${PLATFORM},Darwin)
-                dep_arch=darwin-386
-        endif
+	dep_arch=linux-386
+else ifeq (${PLATFORM},Darwin)
+	dep_arch=darwin-386
+endif
 
 DEP_VERSION=v0.5.0
 .PHONY: get-dep
@@ -113,16 +112,37 @@ srpm: .srpm-done
 
 rpm: .rpm-done
 
-ubuntu-trusty:
-	cp packaging/ubuntu-trusty/ecs.conf ecs.conf
-	tar -czf ./amazon-ecs-init_${VERSION}.orig.tar.gz ecs-init ecs.conf scripts README.md
+ARCH:=$(shell uname -m)
+ifeq (${ARCH},x86_64)
+	AGENT_URL=https://s3.amazonaws.com/amazon-ecs-agent/ecs-agent-v${VERSION}.tar
+else ifeq (${ARCH},aarch64)
+	AGENT_URL=https://s3.amazonaws.com/amazon-ecs-agent/ecs-agent-arm64-v${VERSION}.tar
+endif
+
+BUILDROOT/ecs-agent.tar:
 	mkdir -p BUILDROOT
-	cp -r packaging/ubuntu-trusty/debian BUILDROOT/debian
-	cp -r ecs-init BUILDROOT
-	cp packaging/ubuntu-trusty/ecs.conf BUILDROOT
-	cp -r scripts BUILDROOT
-	cp README.md BUILDROOT
-	cd BUILDROOT && debuild $(shell [ "$(DEB_SIGN)" -ne "0" ] || echo "-uc -us")
+	curl -o BUILDROOT/ecs-agent.tar ${AGENT_URL}
+
+.generic-rpm-done:
+	./scripts/update-version.sh
+	cp packaging/generic-rpm/amazon-ecs-init.spec amazon-ecs-init.spec
+	cp packaging/generic-rpm/ecs.service ecs.service
+	tar -czf ./sources.tgz ecs-init scripts
+	test -e SOURCES || ln -s . SOURCES
+	rpmbuild --define "%_topdir $(PWD)" -bb amazon-ecs-init.spec
+	find RPMS/ -type f -exec cp {} . \;
+	touch .rpm-done
+
+generic-rpm: .generic-rpm-done
+
+.PHONY: deb
+deb: .deb-done
+.deb-done: BUILDROOT/ecs-agent.tar
+	./scripts/update-version.sh
+	tar -czf ./amazon-ecs-init_${VERSION}.orig.tar.gz ecs-init scripts README.md
+	cp -r packaging/generic-deb/debian ecs-init scripts README.md BUILDROOT
+	cd BUILDROOT && debuild -uc -us --lintian-opts --suppress-tags bad-distribution-in-changes-file,file-in-unusual-dir
+	touch .deb-done
 
 get-deps:
 	go get golang.org/x/tools/cover
@@ -142,12 +162,15 @@ clean:
 	-rm -rf ./bin
 	-rm -f ./sources.tgz
 	-rm -f ./amazon-ecs-init
+	-rm -f ./amazon-ecs-init-*.rpm
 	-rm -f ./ecs-agent-*.tar
 	-rm -f ./ecs-init-*.src.rpm
 	-rm -rf ./ecs-init-*
 	-rm -rf ./BUILDROOT BUILD RPMS SRPMS SOURCES SPECS
 	-rm -rf ./x86_64
 	-rm -f ./amazon-ecs-init_${VERSION}*
-	-rm -f .srpm-done .rpm-done
+	-rm -f .srpm-done .rpm-done .generic-rpm-done
+	-rm -f .deb-done
 	-rm -f cover.out
 	-rm -f coverprofile.out
+	-rm -f amazon-ecs-volume-plugin

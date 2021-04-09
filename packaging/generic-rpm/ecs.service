@@ -17,7 +17,7 @@ Description=Amazon Elastic Container Service - container agent
 Documentation=https://aws.amazon.com/documentation/ecs/
 Requires=docker.service
 After=docker.service
-After=cloud-final.service
+Requires=ecs-ready.service
 
 [Service]
 Type=simple

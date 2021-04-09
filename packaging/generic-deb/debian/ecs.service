@@ -17,10 +17,12 @@ Description=Amazon Elastic Container Service - container agent
 Documentation=https://aws.amazon.com/documentation/ecs/
 Requires=docker.service
 After=docker.service
+Requires=ecs-ready.service
 
 [Service]
 Type=simple
 Restart=on-failure
+RestartPreventExitStatus=5
 RestartSec=10s
 EnvironmentFile=-/var/lib/ecs/ecs.config
 EnvironmentFile=-/etc/ecs/ecs.config

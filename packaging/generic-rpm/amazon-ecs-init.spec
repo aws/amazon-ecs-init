@@ -38,6 +38,7 @@ Source2:        ecs.service
 Source3:        https://s3.amazonaws.com/amazon-ecs-agent/ecs-agent-v%{bundled_agent_version}.tar
 # aarch64 Container agent docker image
 Source4:        https://s3.amazonaws.com/amazon-ecs-agent/ecs-agent-arm64-v%{bundled_agent_version}.tar
+Source5:        ecs-ready.service
 
 BuildRequires:  golang >= 1.7
 BuildRequires:  systemd
@@ -73,6 +74,7 @@ install -m %{no_exec_perm} %{agent_image} %{buildroot}%{_cachedir}/ecs/
 mkdir -p %{buildroot}%{_sharedstatedir}/ecs/data
 
 install -m %{no_exec_perm} -D %{SOURCE2} $RPM_BUILD_ROOT/%{_unitdir}/ecs.service
+install -m %{no_exec_perm} -D %{SOURCE5} $RPM_BUILD_ROOT/%{_unitdir}/ecs-ready.service
 
 %files
 %{_libexecdir}/amazon-ecs-init
@@ -84,6 +86,7 @@ install -m %{no_exec_perm} -D %{SOURCE2} $RPM_BUILD_ROOT/%{_unitdir}/ecs.service
 %{_cachedir}/ecs/state
 %dir %{_sharedstatedir}/ecs/data
 %{_unitdir}/ecs.service
+%{_unitdir}/ecs-ready.service
 
 %post
 # Symlink the bundled ECS Agent at loadable path.

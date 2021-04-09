@@ -127,6 +127,7 @@ BUILDROOT/ecs-agent.tar:
 	./scripts/update-version.sh
 	cp packaging/generic-rpm/amazon-ecs-init.spec amazon-ecs-init.spec
 	cp packaging/generic-rpm/ecs.service ecs.service
+	cp packaging/generic-rpm/ecs-ready.service ecs-ready.service
 	tar -czf ./sources.tgz ecs-init scripts
 	test -e SOURCES || ln -s . SOURCES
 	rpmbuild --define "%_topdir $(PWD)" -bb amazon-ecs-init.spec
@@ -156,6 +157,7 @@ clean:
 	-rm -f ecs-init.spec
 	-rm -f ecs.conf
 	-rm -f ecs.service
+	-rm -f ecs-ready.service
 	-rm -f amazon-ecs-volume-plugin.conf
 	-rm -f amazon-ecs-volume-plugin.service
 	-rm -f amazon-ecs-volume-plugin.socket

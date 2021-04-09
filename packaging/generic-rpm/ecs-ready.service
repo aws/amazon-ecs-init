@@ -1,0 +1,12 @@
+[Unit]
+Description=Amazon ECS Dependencies Loaded
+Documentation=https://aws.amazon.com/documentation/ecs/
+After=cloud-final.service
+RefuseManualStart=yes
+
+[Service]
+Type=oneshot
+ExecStart=/bin/true
+
+[Install]
+WantedBy=multi-user.target

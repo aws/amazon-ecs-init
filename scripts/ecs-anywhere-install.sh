@@ -317,6 +317,7 @@ install-ssm-agent() {
             curl-helper "$dir/$SSM_DEB_PKG_NAME" "$SSM_DEB_URL"
             curl-helper "$dir/$SSM_DEB_PKG_NAME.sig" "$SSM_DEB_URL.sig"
             ssm-agent-signature-verify "$dir/$SSM_DEB_PKG_NAME.sig" "$dir/$SSM_DEB_PKG_NAME"
+            chmod -R a+rX "$dir"
             dpkg -i "$dir/ssm-agent.deb"
             ;;
         dnf | yum | zypper)
@@ -477,6 +478,7 @@ install-ecs-agent() {
             curl-helper "$dir/$DEB_PKG_NAME.asc" "$DEB_URL.asc"
             ecs-init-signature-verify "$dir/$DEB_PKG_NAME.asc" "$dir/$DEB_PKG_NAME"
         fi
+        chmod -R a+rX "$dir"
         apt install -y "$dir/$DEB_PKG_NAME"
         rm -rf "$dir"
         ;;

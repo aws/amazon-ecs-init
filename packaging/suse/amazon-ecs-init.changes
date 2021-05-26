@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Wed May 26 11:33:16 UTC 2021 - Robert Schweikert <rjschwei@suse.com>
+
+- Add bundled dependencies
+- Update amazon-ecs.service to consider the proper environment files
+- Set the cache state to ensure the latest agent container gets pulled
+
+-------------------------------------------------------------------
 Tue May 25, 19:30:00 UTC 2021 - fenxiong@amazon.com - 1.52.2-2
 
 - Cache Agent version 1.52.2

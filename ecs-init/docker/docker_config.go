@@ -14,6 +14,8 @@
 package docker
 
 import (
+	"os"
+
 	"github.com/aws/amazon-ecs-init/ecs-init/config"
 	godocker "github.com/fsouza/go-dockerclient"
 )
@@ -33,14 +35,25 @@ func getPlatformSpecificEnvVariables() map[string]string {
 func createHostConfig(binds []string) *godocker.HostConfig {
 	binds = append(binds,
 		config.ProcFS+":"+hostProcDir+readOnly,
-		iptablesUsrLibDir+":"+iptablesUsrLibDir+readOnly,
-		iptablesLibDir+":"+iptablesLibDir+readOnly,
-		iptablesUsrLib64Dir+":"+iptablesUsrLib64Dir+readOnly,
-		iptablesLib64Dir+":"+iptablesLib64Dir+readOnly,
-		iptablesExecutableHostDir+":"+iptablesExecutableContainerDir+readOnly,
-		iptablesAltDir+":"+iptablesAltDir+readOnly,
-		iptablesLegacyDir+":"+iptablesLegacyDir+readOnly,
 	)
+
+	iptablesDirs := map[string]string{
+		iptablesUsrLibDir:         iptablesUsrLibDir + readOnly,
+		iptablesLibDir:            iptablesLibDir + readOnly,
+		iptablesUsrLib64Dir:       iptablesUsrLib64Dir + readOnly,
+		iptablesLib64Dir:          iptablesLib64Dir + readOnly,
+		iptablesExecutableHostDir: iptablesExecutableContainerDir + readOnly,
+		iptablesAltDir:            iptablesAltDir + readOnly,
+		iptablesLegacyDir:         iptablesLegacyDir + readOnly,
+	}
+	// only mount host directories that actually exist
+	for hostDir, guestDir := range iptablesDirs {
+		if _, err := os.Stat(hostDir); !os.IsNotExist(err) {
+			binds = append(binds,
+				hostDir+":"+guestDir,
+			)
+		}
+	}
 
 	logConfig := config.AgentDockerLogDriverConfiguration()
 

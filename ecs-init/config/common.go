@@ -137,7 +137,7 @@ func GetAgentPartitionBucketRegion(region string) (string, error) {
 
 // AgentConfigDirectory returns the location on disk for configuration
 func AgentConfigDirectory() string {
-	return directoryPrefix + "/etc/ecs"
+	return DirectoryPrefix + "/etc/ecs"
 }
 
 // AgentConfigFile returns the location of a file of environment variables passed to the Agent
@@ -152,7 +152,7 @@ func AgentJSONConfigFile() string {
 
 // LogDirectory returns the location on disk where logs should be placed
 func LogDirectory() string {
-	return directoryPrefix + "/var/log/ecs"
+	return DirectoryPrefix + "/var/log/ecs"
 }
 
 func initLogFile() string {
@@ -161,12 +161,12 @@ func initLogFile() string {
 
 // AgentDataDirectory returns the location on disk where state should be saved
 func AgentDataDirectory() string {
-	return directoryPrefix + "/var/lib/ecs/data"
+	return DirectoryPrefix + "/var/lib/ecs/data"
 }
 
 // CacheDirectory returns the location on disk where Agent images should be cached
 func CacheDirectory() string {
-	return directoryPrefix + "/var/cache/ecs"
+	return DirectoryPrefix + "/var/cache/ecs"
 }
 
 // CacheState returns the location on disk where cache state is stored
@@ -280,7 +280,7 @@ func parseLogOptions() map[string]string {
 
 // InstanceConfigDirectory returns the location on disk for custom instance configuration
 func InstanceConfigDirectory() string {
-	return directoryPrefix + "/var/lib/ecs"
+	return DirectoryPrefix + "/var/lib/ecs"
 }
 
 // InstanceConfigFile returns the location of a file of custom environment variables

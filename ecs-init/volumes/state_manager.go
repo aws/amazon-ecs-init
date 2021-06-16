@@ -21,17 +21,18 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/aws/amazon-ecs-init/ecs-init/config"
 	"github.com/cihub/seelog"
 )
 
 const (
 	// PluginStatePath is the directory path to the plugin state information
 	// TODO: get this value from an env var
-	PluginStatePath = "/var/lib/ecs/data/"
+	PluginStatePath = config.DirectoryPrefix + "/var/lib/ecs/data/"
 	// PluginStateFile contains the state information of the plugin
 	PluginStateFile = "ecs_volume_plugin.json"
 	// PluginStateFileAbsPath is the absolute path of the plugin state file
-	PluginStateFileAbsPath = "/var/lib/ecs/data/ecs_volume_plugin.json"
+	PluginStateFileAbsPath = config.DirectoryPrefix + "/var/lib/ecs/data/ecs_volume_plugin.json"
 )
 
 // StateManager manages the state of the volumes information

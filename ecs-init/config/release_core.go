@@ -1,4 +1,4 @@
-// +build !development,!ubuntucore
+// +build !development,ubuntucore
 
 // Copyright 2015 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
@@ -15,9 +15,14 @@
 
 package config
 
+import "os"
+
+var (
+	DirectoryPrefix = os.Getenv("SNAP_DATA")
+	HomeDirectory   = os.Getenv("SNAP_USER_DATA")
+)
+
 const (
-	DirectoryPrefix       = ""
-	DockerDirectoryPrefix = ""
-	HomeDirectory         = "/root"
+	DockerDirectoryPrefix = "/var/snap/docker/current"
 	s3Bucket              = "amazon-ecs-agent"
 )

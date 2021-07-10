@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 
 	"github.com/NVIDIA/gpu-monitoring-tools/bindings/go/nvml"
+	"github.com/aws/amazon-ecs-init/ecs-init/config"
 	"github.com/cihub/seelog"
 	"github.com/pkg/errors"
 )
@@ -48,7 +49,7 @@ const (
 	// NvidiaGPUDeviceFilePattern is the pattern of GPU device files on the instance
 	NvidiaGPUDeviceFilePattern = "/dev/nvidia*"
 	// GPUInfoDirPath is the directory where gpus and driver info are saved
-	GPUInfoDirPath = "/var/lib/ecs/gpu"
+	GPUInfoDirPath = config.DirectoryPrefix + "/var/lib/ecs/gpu"
 	// NvidiaGPUInfoFilePath is the file path where gpus and driver info are saved
 	NvidiaGPUInfoFilePath = GPUInfoDirPath + "/nvidia-gpu-info.json"
 	// FilePerm is the file permissions for gpu info json file

@@ -85,10 +85,10 @@ const (
 	pluginSocketFilesDir = "/run/docker/plugins"
 	// pluginSpecFilesEtcDir specifies one of the locations of spec or json files
 	// of Docker plugins
-	pluginSpecFilesEtcDir = "/etc/docker/plugins"
+	pluginSpecFilesEtcDir = config.DockerDirectoryPrefix + "/etc/docker/plugins"
 	// pluginSpecFilesUsrDir specifies one of the locations of spec or json files
 	// of Docker plugins
-	pluginSpecFilesUsrDir = "/usr/lib/docker/plugins"
+	pluginSpecFilesUsrDir = config.DockerDirectoryPrefix + "/usr/lib/docker/plugins"
 	// iptablesExecutableHostDir specifies the location of the iptable
 	// executable on the host
 	iptablesExecutableHostDir = "/sbin"
@@ -100,7 +100,7 @@ const (
 	// legacyDir holds the location of legacy iptables
 	iptablesLegacyDir = "/usr/sbin"
 	// externalEnvCredsHostDir specifies the location of the credentials on host when running in external environment.
-	externalEnvCredsHostDir = "/root/.aws"
+	externalEnvCredsHostDir = config.HomeDirectory + "/.aws"
 	// externalEnvCredsContainerDir specifies the location of the credentials that will be mounted in agent container.
 	externalEnvCredsContainerDir = "/rotatingcreds"
 
@@ -112,7 +112,7 @@ const (
 	iptablesLib64Dir    = "/lib64"
 	iptablesUsrLib64Dir = "/usr/lib64"
 
-	hostResourcesRootDir      = "/var/lib/ecs/deps"
+	hostResourcesRootDir      = config.DirectoryPrefix + "/var/lib/ecs/deps"
 	containerResourcesRootDir = "/managed-agents"
 
 	execCapabilityName     = "execute-command"

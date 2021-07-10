@@ -20,13 +20,15 @@ import (
 	"os"
 )
 
-var directoryPrefix string
+var DirectoryPrefix string
 var s3Bucket string
+
+const HomeDirectory = "/root"
 
 func init() {
 	fmt.Println("****************")
 	fmt.Println("DEVELOPMENT MODE")
-	directoryPrefix = getDirectoryPrefix()
+	DirectoryPrefix = getDirectoryPrefix()
 	s3Bucket = getS3Bucket()
 	fmt.Println("****************")
 }

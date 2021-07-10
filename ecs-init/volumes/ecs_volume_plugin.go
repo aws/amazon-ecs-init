@@ -19,13 +19,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aws/amazon-ecs-init/ecs-init/config"
 	"github.com/cihub/seelog"
 	"github.com/docker/go-plugins-helpers/volume"
 )
 
 const (
 	// VolumeMountPathPrefix is the host path where amazon ECS plugin's volumes are mounted
-	VolumeMountPathPrefix = "/var/lib/ecs/volumes/"
+	VolumeMountPathPrefix = config.DirectoryPrefix + "/var/lib/ecs/volumes/"
 	// FilePerm is the file permissions for the host volume mount directory
 	FilePerm          = 0700
 	defaultDriverType = "efs"

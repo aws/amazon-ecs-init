@@ -14,3 +14,6 @@ Steps to build and install package:
 
 5. Install docker and start and enable ecs service
     sudo systemctl enable --now ecs
+
+6. Start and enable amazon-ecs-volume-plugin
+    sudo systemctl enable --now amazon-ecs-volume-plugin

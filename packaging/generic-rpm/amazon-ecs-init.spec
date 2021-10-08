@@ -27,7 +27,7 @@
 %endif
 
 Name:           amazon-ecs-init
-Version:        1.54.1
+Version:        1.55.4
 Release:        1
 License:        Apache 2.0
 Summary:        Amazon Elastic Container Service initialization application
@@ -105,6 +105,23 @@ ln -sf %{basename:%{agent_image}} %{_cachedir}/ecs/ecs-agent.tar
 %systemd_postun
 
 %changelog
+* Thu Sep 30 2021 Ray Allan <fierlion@amazon.com> - 1.55.4-1
+- Cache Agent version 1.55.4
+- GPU updates for ECS Anywhere
+- Introduce new configuration variable ECS_OFFHOST_INTROSPECTION_NAME to specify the primary network interface name to block offhost agent introspection port access.
+
+* Thu Sep 16 2021 Mythri Garaga Manjunatha <mythr@amazon.com> - 1.55.3-1
+- Cache Agent version 1.55.3
+
+* Thu Sep 02 2021 Yinyi Chen <yinyic@amazon.com> - 1.55.2-1
+- Cache Agent version 1.55.2
+
+* Thu Aug 19 2021 Meghna Srivastav <mssrivas@amazon.com> - 1.55.1-1
+- Cache Agent version 1.55.1
+
+* Thu Aug 05 2021 Heming Han <hanhm@amazon.com> - 1.55.0-1
+- Cache Agent version 1.55.0
+
 * Mon Jul 26 2021 Utsa Bhattacharjya <utsa@amazon.com> - 1.54.1-1
 - Cache Agent version 1.54.1
 

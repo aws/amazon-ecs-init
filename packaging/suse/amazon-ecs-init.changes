@@ -1,4 +1,26 @@
 -------------------------------------------------------------------
+Thu Sep 30, 12:00:00 UTC 2021 - fierlion@amazon.com - 1.55.4-1
+
+- Cache Agent version 1.55.4
+- GPU updates for ECS Anywhere
+- Introduce new configuration variable ECS_OFFHOST_INTROSPECTION_NAME to specify the primary network interface name to block offhost agent introspection port access.
+-------------------------------------------------------------------
+Thu Sep 16, 20:10:00 UTC 2021 - mythr@amazon.com - 1.55.3-1
+
+- Cache Agent version 1.55.3
+-------------------------------------------------------------------
+Thu Sep 02, 22:10:00 UTC 2021 - yinyic@amazon.com - 1.55.2-1
+
+- Cache Agent version 1.55.2
+-------------------------------------------------------------------
+Thu Aug 19, 19:03:32 UTC 2021 - mssrivas@amazon.com - 1.55.1-1
+
+- Cache Agent version 1.55.1
+-------------------------------------------------------------------
+Thu Aug 05, 18:30:00 UTC 2021 - hanhm@amazon.com - 1.55.0-1
+
+- Cache Agent version 1.55.0
+-------------------------------------------------------------------
 Mon Jul 26, 16:35:00 UTC 2021 - utsa@amazon.com - 1.54.1-1
 
 - Cache Agent version 1.54.1

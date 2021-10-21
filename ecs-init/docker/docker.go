@@ -408,6 +408,9 @@ func (c *Client) getHostConfig(envVarsFromFiles map[string]string) *godocker.Hos
 	if config.RunningInExternal() {
 		credsPath := externalEnvCredsHostDir + ":" + externalEnvCredsContainerDir + readOnly
 		binds = append(binds, credsPath)
+		certsPath := "/var/lib/ecs/deps/execute-command/certs:/etc/ssl/certs/" + readOnly
+		binds = append(binds, certsPath)
+		log.Infof("certs folder bind mounted")
 	}
 
 	for key, val := range c.LoadEnvVars() {

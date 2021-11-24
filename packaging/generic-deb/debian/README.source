@@ -14,3 +14,20 @@ Steps to build and install package:
 
 5. Install docker and start and enable ecs service
     sudo systemctl enable --now ecs
+
+
+Steps to build and install the ecs_volume_plugin package:
+
+1. Install build dependencies
+    sudo apt-get update -y && sudo apt-get install -y devscripts build-essential lintian git curl golang-go debhelper
+
+2. Build the package by running
+    make static
+
+3. Copy the binary amd service configs
+    cp amazon-ecs-volume-plugin /usr/libexec/ -f
+    cp packaging/amazon-linux-ami/amazon-ecs-volume-plugin* /lib/systemd/system/
+
+4. Restart docker and start the volume plugin service
+    systemctl restart docker
+    systemctl start amazon-ecs-volume-plugin.service

@@ -18,7 +18,6 @@
 %global no_exec_perm 644
 %global _missing_build_ids_terminate_build 0
 %global debug_package %{nil}
-%undefine _disable_source_fetch
 
 %ifarch x86_64
 %global agent_image %{SOURCE3}
@@ -34,6 +33,7 @@ License:        Apache 2.0
 Summary:        Amazon Elastic Container Service initialization application
 ExclusiveArch:  x86_64 aarch64
 
+%undefine _disable_source_fetch
 Source0:        sources.tgz
 Source1:        ecs.conf
 Source2:        ecs.service

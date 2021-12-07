@@ -58,6 +58,7 @@ required routes among its preparation steps.
 %setup -c
 
 %build
+spectool -g -R packaging/generic-rpm/amazon-ecs-init.spec
 ./scripts/gobuild.sh %{gobuild_tag}
 
 %install

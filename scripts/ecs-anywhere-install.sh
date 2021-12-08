@@ -643,6 +643,7 @@ find-copy-certs-exec() {
         fail
     else
         echo "Using $certs"
+        openssl verify -x509_strict "$certs"
         mkdir -p $CERTS_PATH
         cp "$certs" $CERTS_PATH/tls-ca-bundle.pem
         chmod 400 $CERTS_PATH/tls-ca-bundle.pem

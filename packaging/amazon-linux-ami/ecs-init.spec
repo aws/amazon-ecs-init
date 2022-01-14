@@ -32,7 +32,7 @@
 %endif
 
 Name:           ecs-init
-Version:        1.57.1
+Version:        1.58.0
 Release:        1%{?dist}
 License:        Apache 2.0
 Summary:        Amazon Elastic Container Service initialization application
@@ -278,6 +278,11 @@ fi
 %endif
 
 %changelog
+* Fri Jan 14 2022 Cameron Sparr <cssparr@amazon.com> - 1.58.0-1
+- Cache Agent version 1.58.0
+- Add amazon-ecs-volume-plugin to rpm and deb generic packages
+- Add exec prerequisites to ecs-anywhere installation script
+
 * Fri Dec 03 2021 Mythri Garaga Mannjunatha <mythr@amazon.com> - 1.57.1-1
 - Cache Agent version 1.57.1
 - Enable AL2 support for ECS-A

@@ -1,3 +1,10 @@
+1.58.0-1
+Cameron Sparr <cssparr@amazon.com>
+2022-01-14T10:00:00-08:00
+Cache Agent version 1.58.0
+Add amazon-ecs-volume-plugin to rpm and deb generic packages
+Add exec prerequisites to ecs-anywhere installation script
+
 1.57.1-1
 Mythri Garaga Mannjunatha <mythr@amazon.com>
 2021-12-03T10:00:00-08:00

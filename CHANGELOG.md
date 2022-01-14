@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.58.0-1
+* Cache Agent version 1.58.0
+* Add amazon-ecs-volume-plugin to rpm and deb generic packages
+* Add exec prerequisites to ecs-anywhere installation script
+
 ## 1.57.1-1
 * Cache Agent version 1.57.1
 * Enable AL2 support for ECS-A

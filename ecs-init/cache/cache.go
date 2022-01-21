@@ -17,7 +17,7 @@ package cache
 
 import (
 	"bufio"
-	"crypto/md5"
+	"crypto/sha256"
 	"fmt"
 	"io"
 	"os"
@@ -212,7 +212,7 @@ func (d *Downloader) DownloadAgent() error {
 		return err
 	}
 
-	publishedMd5Sum, err := d.getPublishedMd5Sum()
+	publishedSha256Sum, err := d.getPublishedSha256Sum()
 	if err != nil {
 		return err
 	}
@@ -235,17 +235,17 @@ func (d *Downloader) DownloadAgent() error {
 	}
 	defer publishedTarballReader.Close()
 
-	md5hash := md5.New()
-	_, err = d.fs.Copy(md5hash, publishedTarballReader)
+	sha256hash := sha256.New()
+	_, err = d.fs.Copy(sha256hash, publishedTarballReader)
 	if err != nil {
 		return err
 	}
 
-	calculatedMd5Sum := md5hash.Sum(nil)
-	calculatedMd5SumString := fmt.Sprintf("%x", calculatedMd5Sum)
-	log.Debugf("Expected MD5 %q", publishedMd5Sum)
-	log.Debugf("Calculated MD5 %q", calculatedMd5SumString)
-	if publishedMd5Sum != calculatedMd5SumString {
+	calculatedSha256Sum := sha256hash.Sum(nil)
+	calculatedSha256SumString := fmt.Sprintf("%x", calculatedSha256Sum)
+	log.Debugf("Expected SHA256 %q", publishedSha256Sum)
+	log.Debugf("Calculated SHA256 %q", calculatedSha256SumString)
+	if publishedSha256Sum != calculatedSha256SumString {
 		agentTarballName, err := config.AgentRemoteTarballKey()
 		if err != nil {
 			return errors.New("downloaded agent does not match expected checksum")
@@ -257,28 +257,28 @@ func (d *Downloader) DownloadAgent() error {
 	return d.fs.Rename(tempFileName, config.AgentTarball())
 }
 
-func (d *Downloader) getPublishedMd5Sum() (string, error) {
-	objectKey, err := config.AgentRemoteTarballMD5Key()
+func (d *Downloader) getPublishedSha256Sum() (string, error) {
+	objectKey, err := config.AgentRemoteTarballSHA256Key()
 	if err != nil {
-		return "", errors.Wrap(err, "failed to determine md5 file for download")
+		return "", errors.Wrap(err, "failed to determine sha256 file for download")
 	}
-	tempMd5FileName, err := d.s3Downloader.downloadFile(objectKey)
+	tempSha256FileName, err := d.s3Downloader.downloadFile(objectKey)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to download md5 file for published tarball")
+		return "", errors.Wrap(err, "failed to download sha256 file for published tarball")
 	}
 
-	tempMd5File, err := d.fs.Open(tempMd5FileName)
+	tempSha256File, err := d.fs.Open(tempSha256FileName)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to open temporary md5 file")
+		return "", errors.Wrap(err, "failed to open temporary sha256 file")
 	}
 	defer func() { // clean up temp file
-		log.Debugf("Removing temp file %s", tempMd5FileName)
-		d.fs.Remove(tempMd5FileName)
+		log.Debugf("Removing temp file %s", tempSha256FileName)
+		d.fs.Remove(tempSha256FileName)
 	}()
 
-	body, err := d.fs.ReadAll(tempMd5File)
+	body, err := d.fs.ReadAll(tempSha256File)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to read from temporary md5 file")
+		return "", errors.Wrap(err, "failed to read from temporary sha256 file")
 	}
 
 	return strings.TrimSpace(string(body)), nil

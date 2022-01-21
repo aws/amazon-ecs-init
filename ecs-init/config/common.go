@@ -188,13 +188,13 @@ func AgentRemoteTarballKey() (string, error) {
 	return fmt.Sprintf("%s.tar", name), nil
 }
 
-// AgentRemoteTarballMD5Key is the remote file of a md5sum used to verify the integrity of the AgentRemoteTarball
-func AgentRemoteTarballMD5Key() (string, error) {
+// AgentRemoteTarballSHA256Key is the remote file of a sha256sum used to verify the integrity of the AgentRemoteTarball
+func AgentRemoteTarballSHA256Key() (string, error) {
 	tarballKey, err := AgentRemoteTarballKey()
 	if err != nil {
 		return "", err
 	}
-	return tarballKey + ".md5", nil
+	return tarballKey + ".sha256", nil
 }
 
 // DesiredImageLocatorFile returns the location on disk of a well-known file describing an Agent image to load

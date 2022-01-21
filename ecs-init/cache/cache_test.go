@@ -15,7 +15,7 @@ package cache
 
 import (
 	"bytes"
-	"crypto/md5"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
@@ -30,8 +30,8 @@ import (
 )
 
 var (
-	remoteTarballKey    string
-	remoteTarballMD5Key string
+	remoteTarballKey       string
+	remoteTarballSHA256Key string
 )
 
 func init() {
@@ -41,7 +41,7 @@ func init() {
 	agentS3Key, err := config.AgentRemoteTarballKey()
 	if err == nil {
 		remoteTarballKey = agentS3Key
-		remoteTarballMD5Key, _ = config.AgentRemoteTarballMD5Key()
+		remoteTarballSHA256Key, _ = config.AgentRemoteTarballSHA256Key()
 	} else {
 		log.Println("Warning: this architecture does not support downloading of agent")
 	}
@@ -193,7 +193,7 @@ func TestDownloadAgentMkdirFailure(t *testing.T) {
 	d.DownloadAgent()
 }
 
-func TestDownloadAgentDownloadMD5Failure(t *testing.T) {
+func TestDownloadAgentDownloadSHA256Failure(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
@@ -203,7 +203,7 @@ func TestDownloadAgentDownloadMD5Failure(t *testing.T) {
 
 	gomock.InOrder(
 		mockFS.EXPECT().MkdirAll(config.CacheDirectory(), os.ModeDir|0700),
-		mockS3Downloader.EXPECT().downloadFile(remoteTarballMD5Key).Return("", errors.New("test error")),
+		mockS3Downloader.EXPECT().downloadFile(remoteTarballSHA256Key).Return("", errors.New("test error")),
 	)
 
 	d := &Downloader{
@@ -216,7 +216,7 @@ func TestDownloadAgentDownloadMD5Failure(t *testing.T) {
 	d.DownloadAgent()
 }
 
-func TestDownloadAgentReadPublishedMd5Failure(t *testing.T) {
+func TestDownloadAgentReadPublishedSha256Failure(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
@@ -224,16 +224,16 @@ func TestDownloadAgentReadPublishedMd5Failure(t *testing.T) {
 	mockS3Downloader := NewMocks3DownloaderAPI(mockCtrl)
 	mockMetadata := NewMockinstanceMetadata(mockCtrl)
 
-	tempMD5File, err := ioutil.TempFile("", "md5-test")
+	tempSHA256File, err := ioutil.TempFile("", "sha256-test")
 	assert.NoError(t, err, "Expect to successfully create a temporary file")
-	defer tempMD5File.Close()
+	defer tempSHA256File.Close()
 
 	gomock.InOrder(
 		mockFS.EXPECT().MkdirAll(config.CacheDirectory(), os.ModeDir|0700),
-		mockS3Downloader.EXPECT().downloadFile(remoteTarballMD5Key).Return(tempMD5File.Name(), nil),
-		mockFS.EXPECT().Open(tempMD5File.Name()).Return(tempMD5File, nil),
-		mockFS.EXPECT().ReadAll(tempMD5File).Return(nil, errors.New("test error")),
-		mockFS.EXPECT().Remove(tempMD5File.Name()),
+		mockS3Downloader.EXPECT().downloadFile(remoteTarballSHA256Key).Return(tempSHA256File.Name(), nil),
+		mockFS.EXPECT().Open(tempSHA256File.Name()).Return(tempSHA256File, nil),
+		mockFS.EXPECT().ReadAll(tempSHA256File).Return(nil, errors.New("test error")),
+		mockFS.EXPECT().Remove(tempSHA256File.Name()),
 	)
 
 	d := &Downloader{
@@ -250,15 +250,15 @@ func TestDownloadAgentDownloadTarballFailure(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	md5sum := "md5sum"
+	sha256sum := "sha256sum"
 
 	mockFS := NewMockfileSystem(mockCtrl)
 	mockS3Downloader := NewMocks3DownloaderAPI(mockCtrl)
 	mockMetadata := NewMockinstanceMetadata(mockCtrl)
 
-	tempMD5File, err := ioutil.TempFile("", "md5-test")
+	tempSHA256File, err := ioutil.TempFile("", "sha256-test")
 	assert.NoError(t, err, "Expect to successfully create a temporary file")
-	defer tempMD5File.Close()
+	defer tempSHA256File.Close()
 
 	tempAgentFile, err := ioutil.TempFile("", "agent-test")
 	assert.NoError(t, err, "Expect to successfully create a temporary file")
@@ -266,10 +266,10 @@ func TestDownloadAgentDownloadTarballFailure(t *testing.T) {
 
 	gomock.InOrder(
 		mockFS.EXPECT().MkdirAll(config.CacheDirectory(), os.ModeDir|0700),
-		mockS3Downloader.EXPECT().downloadFile(remoteTarballMD5Key).Return(tempMD5File.Name(), nil),
-		mockFS.EXPECT().Open(tempMD5File.Name()).Return(tempMD5File, nil),
-		mockFS.EXPECT().ReadAll(tempMD5File).Return([]byte(md5sum), nil),
-		mockFS.EXPECT().Remove(tempMD5File.Name()),
+		mockS3Downloader.EXPECT().downloadFile(remoteTarballSHA256Key).Return(tempSHA256File.Name(), nil),
+		mockFS.EXPECT().Open(tempSHA256File.Name()).Return(tempSHA256File, nil),
+		mockFS.EXPECT().ReadAll(tempSHA256File).Return([]byte(sha256sum), nil),
+		mockFS.EXPECT().Remove(tempSHA256File.Name()),
 		mockS3Downloader.EXPECT().downloadFile(remoteTarballKey).Return("", errors.New("test error")),
 	)
 
@@ -287,15 +287,15 @@ func TestDownloadAgentCopyFailure(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	md5sum := "md5sum"
+	sha256sum := "sha256sum"
 
 	mockFS := NewMockfileSystem(mockCtrl)
 	mockS3Downloader := NewMocks3DownloaderAPI(mockCtrl)
 	mockMetadata := NewMockinstanceMetadata(mockCtrl)
 
-	tempMD5File, err := ioutil.TempFile("", "md5-test")
+	tempSHA256File, err := ioutil.TempFile("", "sha256-test")
 	assert.NoError(t, err, "Expect to successfully create a temporary file")
-	defer tempMD5File.Close()
+	defer tempSHA256File.Close()
 
 	tempAgentFile, err := ioutil.TempFile("", "agent-test")
 	assert.NoError(t, err, "Expect to successfully create a temporary file")
@@ -305,10 +305,10 @@ func TestDownloadAgentCopyFailure(t *testing.T) {
 
 	gomock.InOrder(
 		mockFS.EXPECT().MkdirAll(config.CacheDirectory(), os.ModeDir|0700),
-		mockS3Downloader.EXPECT().downloadFile(remoteTarballMD5Key).Return(tempMD5File.Name(), nil),
-		mockFS.EXPECT().Open(tempMD5File.Name()).Return(tempMD5File, nil),
-		mockFS.EXPECT().ReadAll(tempMD5File).Return([]byte(md5sum), nil),
-		mockFS.EXPECT().Remove(tempMD5File.Name()),
+		mockS3Downloader.EXPECT().downloadFile(remoteTarballSHA256Key).Return(tempSHA256File.Name(), nil),
+		mockFS.EXPECT().Open(tempSHA256File.Name()).Return(tempSHA256File, nil),
+		mockFS.EXPECT().ReadAll(tempSHA256File).Return([]byte(sha256sum), nil),
+		mockFS.EXPECT().Remove(tempSHA256File.Name()),
 		mockS3Downloader.EXPECT().downloadFile(remoteTarballKey).Return(tempAgentFile.Name(), nil),
 		mockFS.EXPECT().Open(tempAgentFile.Name()).Return(tempReader, nil),
 		mockFS.EXPECT().Copy(gomock.Any(), tempReader).Return(int64(0), errors.New("test error")),
@@ -326,19 +326,19 @@ func TestDownloadAgentCopyFailure(t *testing.T) {
 	d.DownloadAgent()
 }
 
-func TestDownloadAgentMD5Mismatch(t *testing.T) {
+func TestDownloadAgentSHA256Mismatch(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	md5sum := "md5sum"
+	sha256sum := "sha256sum"
 
 	mockFS := NewMockfileSystem(mockCtrl)
 	mockS3Downloader := NewMocks3DownloaderAPI(mockCtrl)
 	mockMetadata := NewMockinstanceMetadata(mockCtrl)
 
-	tempMD5File, err := ioutil.TempFile("", "md5-test")
+	tempSHA256File, err := ioutil.TempFile("", "sha256-test")
 	assert.NoError(t, err, "Expect to successfully create a temporary file")
-	defer tempMD5File.Close()
+	defer tempSHA256File.Close()
 
 	tempAgentFile, err := ioutil.TempFile("", "agent-test")
 	assert.NoError(t, err, "Expect to successfully create a temporary file")
@@ -348,10 +348,10 @@ func TestDownloadAgentMD5Mismatch(t *testing.T) {
 
 	gomock.InOrder(
 		mockFS.EXPECT().MkdirAll(config.CacheDirectory(), os.ModeDir|0700),
-		mockS3Downloader.EXPECT().downloadFile(remoteTarballMD5Key).Return(tempMD5File.Name(), nil),
-		mockFS.EXPECT().Open(tempMD5File.Name()).Return(tempMD5File, nil),
-		mockFS.EXPECT().ReadAll(tempMD5File).Return([]byte(md5sum), nil),
-		mockFS.EXPECT().Remove(tempMD5File.Name()),
+		mockS3Downloader.EXPECT().downloadFile(remoteTarballSHA256Key).Return(tempSHA256File.Name(), nil),
+		mockFS.EXPECT().Open(tempSHA256File.Name()).Return(tempSHA256File, nil),
+		mockFS.EXPECT().ReadAll(tempSHA256File).Return([]byte(sha256sum), nil),
+		mockFS.EXPECT().Remove(tempSHA256File.Name()),
 		mockS3Downloader.EXPECT().downloadFile(remoteTarballKey).Return(tempAgentFile.Name(), nil),
 		mockFS.EXPECT().Open(tempAgentFile.Name()).Return(tempReader, nil),
 		mockFS.EXPECT().Copy(gomock.Any(), tempReader).Return(int64(0), nil),
@@ -375,11 +375,11 @@ func TestDownloadAgentSuccess(t *testing.T) {
 
 	tarballContents := "tarball contents"
 	tarballReader := ioutil.NopCloser(bytes.NewBufferString(tarballContents))
-	expectedMd5Sum := fmt.Sprintf("%x\n", md5.Sum([]byte(tarballContents)))
+	expectedSha256Sum := fmt.Sprintf("%x\n", sha256.Sum256([]byte(tarballContents)))
 
-	tempMD5File, err := ioutil.TempFile("", "md5-test")
+	tempSHA256File, err := ioutil.TempFile("", "sha256-test")
 	assert.NoError(t, err, "Expect to successfully create a temporary file")
-	defer tempMD5File.Close()
+	defer tempSHA256File.Close()
 
 	tempAgentFile, err := ioutil.TempFile("", "agent-test")
 	assert.NoError(t, err, "Expect to successfully create a temporary file")
@@ -391,10 +391,10 @@ func TestDownloadAgentSuccess(t *testing.T) {
 
 	gomock.InOrder(
 		mockFS.EXPECT().MkdirAll(config.CacheDirectory(), os.ModeDir|0700),
-		mockS3Downloader.EXPECT().downloadFile(remoteTarballMD5Key).Return(tempMD5File.Name(), nil),
-		mockFS.EXPECT().Open(tempMD5File.Name()).Return(tempMD5File, nil),
-		mockFS.EXPECT().ReadAll(tempMD5File).Return([]byte(expectedMd5Sum), nil),
-		mockFS.EXPECT().Remove(tempMD5File.Name()),
+		mockS3Downloader.EXPECT().downloadFile(remoteTarballSHA256Key).Return(tempSHA256File.Name(), nil),
+		mockFS.EXPECT().Open(tempSHA256File.Name()).Return(tempSHA256File, nil),
+		mockFS.EXPECT().ReadAll(tempSHA256File).Return([]byte(expectedSha256Sum), nil),
+		mockFS.EXPECT().Remove(tempSHA256File.Name()),
 		mockS3Downloader.EXPECT().downloadFile(remoteTarballKey).Return(tempAgentFile.Name(), nil),
 		mockFS.EXPECT().Open(tempAgentFile.Name()).Return(tarballReader, nil),
 		mockFS.EXPECT().Copy(gomock.Any(), tarballReader).Do(func(writer io.Writer, reader io.Reader) {

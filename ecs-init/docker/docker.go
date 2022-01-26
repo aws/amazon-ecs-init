@@ -84,12 +84,6 @@ const (
 	// pluginSocketFilesDir specifies the location of UNIX domain socket files of
 	// Docker plugins
 	pluginSocketFilesDir = "/run/docker/plugins"
-	// pluginSpecFilesEtcDir specifies one of the locations of spec or json files
-	// of Docker plugins
-	pluginSpecFilesEtcDir = "/etc/docker/plugins"
-	// pluginSpecFilesUsrDir specifies one of the locations of spec or json files
-	// of Docker plugins
-	pluginSpecFilesUsrDir = "/usr/lib/docker/plugins"
 	// iptablesExecutableHostDir specifies the location of the iptable
 	// executable on the host
 	iptablesExecutableHostDir = "/sbin"
@@ -100,8 +94,6 @@ const (
 	iptablesAltDir = "/etc/alternatives"
 	// legacyDir holds the location of legacy iptables
 	iptablesLegacyDir = "/usr/sbin"
-	// externalEnvCredsHostDir specifies the location of the credentials on host when running in external environment.
-	externalEnvCredsHostDir = "/root/.aws"
 	// externalEnvCredsContainerDir specifies the location of the credentials that will be mounted in agent container.
 	externalEnvCredsContainerDir = "/rotatingcreds"
 
@@ -113,7 +105,6 @@ const (
 	iptablesLib64Dir    = "/lib64"
 	iptablesUsrLib64Dir = "/usr/lib64"
 
-	hostResourcesRootDir      = "/var/lib/ecs/deps"
 	containerResourcesRootDir = "/managed-agents"
 
 	execCapabilityName     = "execute-command"
@@ -122,6 +113,18 @@ const (
 	execCertsRelativePath  = "certs"
 
 	execAgentLogRelativePath = "/exec"
+)
+
+var (
+	// pluginSpecFilesEtcDir specifies one of the locations of spec or json files
+	// of Docker plugins
+	pluginSpecFilesEtcDir = config.ResolveDockerDirectory("/etc/docker/plugins")
+	// pluginSpecFilesUsrDir specifies one of the locations of spec or json files
+	// of Docker plugins
+	pluginSpecFilesUsrDir = config.ResolveDockerDirectory("/usr/lib/docker/plugins")
+	// externalEnvCredsHostDir specifies the location of the credentials on host when running in external environment.
+	externalEnvCredsHostDir = config.HomeDirectory() + "/.aws"
+	hostResourcesRootDir    = config.ResolveDirectory("/var/lib/ecs/deps")
 )
 
 var pluginDirs = []string{
@@ -430,9 +433,13 @@ func (c *client) getHostConfig(envVarsFromFiles map[string]string) *godocker.Hos
 	}
 
 	binds = append(binds, getDockerPluginDirBinds()...)
+	binds = append(binds,
+		config.ProcFS+":"+hostProcDir+readOnly,
+	)
 
 	// only add bind mounts when the src file/directory exists on host; otherwise docker API create an empty directory on host
 	binds = append(binds, getCapabilityExecBinds()...)
+	binds = append(binds, getIPTablesBinds()...)
 
 	return createHostConfig(binds)
 }
@@ -493,6 +500,31 @@ func getCapabilityExecBinds() []string {
 	if isPathValid(hostCertsDir, true) {
 		binds = append(binds,
 			hostCertsDir+":"+filepath.Join(containerResourcesDir, execCertsRelativePath)+readOnly)
+	}
+
+	return binds
+}
+
+func getIPTablesBinds() []string {
+
+	var binds []string
+
+	iptablesDirs := map[string]string{
+		iptablesUsrLibDir:         iptablesUsrLibDir + readOnly,
+		iptablesLibDir:            iptablesLibDir + readOnly,
+		iptablesUsrLib64Dir:       iptablesUsrLib64Dir + readOnly,
+		iptablesLib64Dir:          iptablesLib64Dir + readOnly,
+		iptablesExecutableHostDir: iptablesExecutableContainerDir + readOnly,
+		iptablesAltDir:            iptablesAltDir + readOnly,
+		iptablesLegacyDir:         iptablesLegacyDir + readOnly,
+	}
+	// only mount host directories that actually exist
+	for hostDir, guestDir := range iptablesDirs {
+		if isPathValid(hostDir, true) {
+			binds = append(binds,
+				hostDir+":"+guestDir,
+			)
+		}
 	}
 
 	return binds

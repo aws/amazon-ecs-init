@@ -1,5 +1,5 @@
-//go:build !development && !snap
-// +build !development,!snap
+//go:build !development && snap
+// +build !development,snap
 
 // Copyright 2015 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
@@ -16,9 +16,14 @@
 
 package config
 
+import "os"
+
 const (
-	directoryPrefix       = ""
-	dockerDirectoryPrefix = ""
-	homeDirectory         = "/root"
 	s3Bucket              = "amazon-ecs-agent"
+	dockerDirectoryPrefix = "/var/snap/docker/current"
+)
+
+var (
+	directoryPrefix = os.Getenv("SNAP_DATA")
+	homeDirectory   = os.Getenv("SNAP_USER_DATA")
 )

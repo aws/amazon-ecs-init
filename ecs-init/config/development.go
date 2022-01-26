@@ -1,3 +1,4 @@
+//go:build development
 // +build development
 
 // Copyright 2015 Amazon.com, Inc. or its affiliates. All Rights Reserved.
@@ -22,6 +23,9 @@ import (
 
 var directoryPrefix string
 var s3Bucket string
+
+const homeDirectory = "/root"
+const dockerDirectoryPrefix = ""
 
 func init() {
 	fmt.Println("****************")

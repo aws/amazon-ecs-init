@@ -164,6 +164,21 @@ func AgentDataDirectory() string {
 	return directoryPrefix + "/var/lib/ecs/data"
 }
 
+// ResolveDirectory prepends the directory prefix (if required) to the given directory
+func ResolveDirectory(directory string) string {
+	return directoryPrefix + directory
+}
+
+// ResolveDockerDirectory prepends any potential prefix for a docker filesystem (within snap)
+func ResolveDockerDirectory(directory string) string {
+	return dockerDirectoryPrefix + directory
+}
+
+// HomeDirectory returns the home directory of the root user
+func HomeDirectory() string {
+	return homeDirectory
+}
+
 // CacheDirectory returns the location on disk where Agent images should be cached
 func CacheDirectory() string {
 	return directoryPrefix + "/var/cache/ecs"

@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 
 	"github.com/NVIDIA/gpu-monitoring-tools/bindings/go/nvml"
+	"github.com/aws/amazon-ecs-init/ecs-init/config"
 	"github.com/cihub/seelog"
 	"github.com/pkg/errors"
 )
@@ -47,10 +48,6 @@ type NvidiaGPUManager struct {
 const (
 	// NvidiaGPUDeviceFilePattern is the pattern of GPU device files on the instance
 	NvidiaGPUDeviceFilePattern = "/dev/nvidia*"
-	// GPUInfoDirPath is the directory where gpus and driver info are saved
-	GPUInfoDirPath = "/var/lib/ecs/gpu"
-	// NvidiaGPUInfoFilePath is the file path where gpus and driver info are saved
-	NvidiaGPUInfoFilePath = GPUInfoDirPath + "/nvidia-gpu-info.json"
 	// FilePerm is the file permissions for gpu info json file
 	FilePerm = 0700
 	// nvidiaEULAAgreementInfo is the EULA agreement that we want to show to the customers when using
@@ -59,8 +56,15 @@ const (
 		"https://www.nvidia.com/en-us/about-nvidia/eula-agreement/"
 )
 
-// ErrNoGPUDeviceFound is thrown when it is not a ECS GPU instance
-var ErrNoGPUDeviceFound = errors.New("No GPU device files found on the instance")
+var (
+	// ErrNoGPUDeviceFound is thrown when it is not a ECS GPU instance
+	ErrNoGPUDeviceFound = errors.New("No GPU device files found on the instance")
+
+	// GPUInfoDirPath is the directory where gpus and driver info are saved
+	GPUInfoDirPath = config.ResolveDirectory("/var/lib/ecs/gpu")
+	// NvidiaGPUInfoFilePath is the file path where gpus and driver info are saved
+	NvidiaGPUInfoFilePath = GPUInfoDirPath + "/nvidia-gpu-info.json"
+)
 
 // NewNvidiaGPUManager is used to obtain NvidiaGPUManager handle
 func NewNvidiaGPUManager() GPUManager {

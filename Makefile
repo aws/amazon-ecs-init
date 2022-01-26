@@ -40,6 +40,9 @@ bin/dep:
 static:
 	./scripts/gobuild.sh
 
+snap-compatible:
+	./scripts/gobuild.sh snap
+
 govet:
 	go vet ./...
 

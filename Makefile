@@ -135,7 +135,6 @@ rpm-in-docker: ${AGENT_FILENAME}
 
 .generic-rpm-done:
 	./scripts/update-version.sh
-	curl -O ${AGENT_URL}
 	cp packaging/generic-rpm/amazon-ecs-init.spec amazon-ecs-init.spec
 	cp packaging/generic-rpm/ecs.service ecs.service
 	cp packaging/generic-rpm/amazon-ecs-volume-plugin.service amazon-ecs-volume-plugin.service

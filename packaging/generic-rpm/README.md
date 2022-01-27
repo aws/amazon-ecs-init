@@ -4,6 +4,14 @@
   ```
   rpm-build make golang-go gcc git wget rpmdevtools 
   ```
+* Download the latest agent
+  ```
+  curl -O https://s3.amazonaws.com/amazon-ecs-agent/ecs-agent-v${VERSION}.tar
+  ```
+  or
+  ```
+  curl -O https://s3.amazonaws.com/amazon-ecs-agent/ecs-agent-arm64-v${VERSION}.tar
+  ```
 * Build the package by running 
   ```
   make generic-rpm

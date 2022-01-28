@@ -429,12 +429,46 @@ func (c *client) getHostConfig(envVarsFromFiles map[string]string) *godocker.Hos
 		}
 	}
 
+	binds = append(binds, getProcfsBinds()...)
 	binds = append(binds, getDockerPluginDirBinds()...)
 
 	// only add bind mounts when the src file/directory exists on host; otherwise docker API create an empty directory on host
 	binds = append(binds, getCapabilityExecBinds()...)
+	binds = append(binds, getIptablesBinds()...)
 
 	return createHostConfig(binds)
+}
+
+// getProcfsBinds returns the bind for proc fs
+func getProcfsBinds() []string {
+	return []string{
+		config.ProcFS + ":" + hostProcDir + readOnly,
+	}
+}
+
+// getIptablesBinds returns the binds for iptables related directories if they exist on the host file system
+func getIptablesBinds() []string {
+	var binds []string
+
+	iptablesDirs := map[string]string{
+		iptablesUsrLibDir:         iptablesUsrLibDir + readOnly,
+		iptablesLibDir:            iptablesLibDir + readOnly,
+		iptablesUsrLib64Dir:       iptablesUsrLib64Dir + readOnly,
+		iptablesLib64Dir:          iptablesLib64Dir + readOnly,
+		iptablesExecutableHostDir: iptablesExecutableContainerDir + readOnly,
+		iptablesAltDir:            iptablesAltDir + readOnly,
+		iptablesLegacyDir:         iptablesLegacyDir + readOnly,
+	}
+	// only mount host directories that actually exist
+	for hostDir, guestDir := range iptablesDirs {
+		if isPathValid(hostDir, true) {
+			binds = append(binds,
+				hostDir+":"+guestDir,
+			)
+		}
+	}
+
+	return binds
 }
 
 // getDockerSocketBind returns the bind for Docker socket.

@@ -33,8 +33,8 @@ import (
 const (
 	testTempDirPrefix = "init-docker-test-"
 
-	expectedAgentBindsUnspecifiedPlatform = 21
-	expectedAgentBindsSuseUbuntuPlatform  = 18
+	expectedAgentBindsUnspecifiedPlatform = 14
+	expectedAgentBindsSuseUbuntuPlatform  = 13
 )
 
 var expectedAgentBinds = expectedAgentBindsUnspecifiedPlatform
@@ -258,8 +258,8 @@ func validateCommonCreateContainerOptions(opts godocker.CreateContainerOptions, 
 		expectedAgentBinds = expectedAgentBindsSuseUbuntuPlatform
 	}
 
-	if len(hostCfg.Binds) != expectedAgentBinds {
-		t.Errorf("Expected exactly %d elements to be in Binds, but was %d", expectedAgentBinds, len(hostCfg.Binds))
+	if len(hostCfg.Binds) < expectedAgentBinds {
+		t.Errorf("Expected at least %d elements to be in Binds, but was %d", expectedAgentBinds, len(hostCfg.Binds))
 	}
 	binds := make(map[string]struct{})
 	for _, binding := range hostCfg.Binds {
@@ -272,13 +272,6 @@ func validateCommonCreateContainerOptions(opts godocker.CreateContainerOptions, 
 	expectKey(config.AgentConfigDirectory()+":"+config.AgentConfigDirectory(), binds, t)
 	expectKey(config.CacheDirectory()+":"+config.CacheDirectory(), binds, t)
 	expectKey(config.ProcFS+":"+hostProcDir+":ro", binds, t)
-	expectKey(iptablesUsrLibDir+":"+iptablesUsrLibDir+":ro", binds, t)
-	expectKey(iptablesLibDir+":"+iptablesLibDir+":ro", binds, t)
-	expectKey(iptablesUsrLib64Dir+":"+iptablesUsrLib64Dir+":ro", binds, t)
-	expectKey(iptablesLib64Dir+":"+iptablesLib64Dir+":ro", binds, t)
-	expectKey(iptablesExecutableHostDir+":"+iptablesExecutableContainerDir+":ro", binds, t)
-	expectKey(iptablesAltDir+":"+iptablesAltDir+":ro", binds, t)
-	expectKey(iptablesLegacyDir+":"+iptablesLegacyDir+":ro", binds, t)
 	expectKey(config.LogDirectory()+"/exec:/log/exec", binds, t)
 	for _, pluginDir := range pluginDirs {
 		expectKey(pluginDir+":"+pluginDir+readOnly, binds, t)

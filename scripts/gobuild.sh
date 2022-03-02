@@ -16,7 +16,6 @@ set -x
 set -e
 export TOPWD="$(pwd)"
 export BUILDDIR="$(mktemp -d)"
-export GOPATH="${TOPWD}/ecs-init/:${BUILDDIR}"
 export SRCPATH="${BUILDDIR}/src/github.com/aws/amazon-ecs-init"
 export GO111MODULE="auto"
 

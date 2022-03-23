@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.60.1-1
+* Cache Agent version 1.60.1
+
 ## 1.60.0-1
 * Cache Agent version 1.60.0
 * Add volume plugin to rpm/deb package

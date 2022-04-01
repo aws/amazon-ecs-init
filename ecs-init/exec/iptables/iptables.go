@@ -80,7 +80,7 @@ func NewNetfilterRoute(cmdExec exec.Exec) (*NetfilterRoute, error) {
 
 	defaultOffhostIntrospectionInterface, err = getOffhostIntrospectionInterface()
 	if err != nil {
-		return nil, fmt.Errorf("Error resolving default offhost introspection network interface: %+v", err)
+		return nil, fmt.Errorf("error resolving default offhost introspection network interface: %+v", err)
 	}
 
 	return &NetfilterRoute{
@@ -229,7 +229,7 @@ func getOffhostIntrospectionInterface() (string, error) {
 var getDefaultNetworkInterfaceIPv4 = func() (string, error) {
 	input, err := os.Open(ipv4RouteFile)
 	if err != nil {
-		return "", fmt.Errorf("Could not get IPv4 route input: %v", err)
+		return "", fmt.Errorf("could not get IPv4 route input: %v", err)
 	}
 	defer input.Close()
 	return scanIPv4RoutesForDefaultInterface(input)
@@ -239,7 +239,6 @@ func scanIPv4RoutesForDefaultInterface(input io.Reader) (string, error) {
 	scanner := bufio.NewScanner(input)
 	for scanner.Scan() {
 		line := scanner.Text()
-		fmt.Println(line)
 		if strings.HasPrefix(line, "Iface") { // skip header line
 			continue
 		}
@@ -248,7 +247,7 @@ func scanIPv4RoutesForDefaultInterface(input io.Reader) (string, error) {
 			return fields[0], nil
 		}
 	}
-	return "", fmt.Errorf("Could not find a default IPv4 route through non-loopback interface")
+	return "", fmt.Errorf("could not find a default IPv4 route through non-loopback interface")
 }
 
 func getOutputChainArgs() []string {

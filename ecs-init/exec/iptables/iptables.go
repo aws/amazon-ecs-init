@@ -82,6 +82,8 @@ func NewNetfilterRoute(cmdExec exec.Exec) (*NetfilterRoute, error) {
 	defaultOffhostIntrospectionInterface, err = getOffhostIntrospectionInterface()
 	if err != nil {
 		log.Warnf("Error resolving default offhost introspection network interface, will use eth0 as fallback: %+v", err)
+		// fall back to the previous behavior (always use 'eth0') in the rare case that it
+		// might affect some customer with a special routing setup that's previously working.
 		defaultOffhostIntrospectionInterface = fallbackOffhostIntrospectionInterface
 	}
 

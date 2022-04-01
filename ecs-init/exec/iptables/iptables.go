@@ -50,9 +50,10 @@ const (
 	offhostIntrospectonAccessInterfaceEnv = "ECS_OFFHOST_INTROSPECTION_INTERFACE_NAME"
 	agentIntrospectionServerPort          = "51678"
 
-	ipv4RouteFile         = "/proc/net/route"
-	ipv4ZeroAddrInHex     = "00000000"
-	loopbackInterfaceName = "lo"
+	ipv4RouteFile                         = "/proc/net/route"
+	ipv4ZeroAddrInHex                     = "00000000"
+	loopbackInterfaceName                 = "lo"
+	fallbackOffhostIntrospectionInterface = "eth0"
 )
 
 var (
@@ -80,7 +81,8 @@ func NewNetfilterRoute(cmdExec exec.Exec) (*NetfilterRoute, error) {
 
 	defaultOffhostIntrospectionInterface, err = getOffhostIntrospectionInterface()
 	if err != nil {
-		return nil, fmt.Errorf("error resolving default offhost introspection network interface: %+v", err)
+		log.Warnf("Error resolving default offhost introspection network interface, will use eth0 as fallback: %+v", err)
+		defaultOffhostIntrospectionInterface = fallbackOffhostIntrospectionInterface
 	}
 
 	return &NetfilterRoute{

@@ -41,7 +41,7 @@ var (
 		"!", "--ctstate", "RELATED,ESTABLISHED,DNAT",
 		"-j", "DROP",
 	}
-	offhostIntrospectionInterface                 = "eth0"
+	offhostIntrospectionInterface                 = "ens5"
 	blockIntrospectionOffhostAccessInputRouteArgs = []string{
 		"-p", "tcp",
 		"-i", offhostIntrospectionInterface,
@@ -63,9 +63,9 @@ var (
 	}
 
 	testIPV4RouteInput = `Iface	Destination	Gateway 	Flags	RefCnt	Use	Metric	Mask		MTU	Window	IRTT                                                       
-eth0	00000000	01201FAC	0003	0	0	0	00000000	0	0	0                                                                               
-eth0	FEA9FEA9	00000000	0005	0	0	0	FFFFFFFF	0	0	0                                                                               
-eth0	00201FAC	00000000	0001	0	0	0	00F0FFFF	0	0	0
+ens5	00000000	01201FAC	0003	0	0	0	00000000	0	0	0                                                                               
+ens5	FEA9FEA9	00000000	0005	0	0	0	FFFFFFFF	0	0	0                                                                               
+ens5	00201FAC	00000000	0001	0	0	0	00F0FFFF	0	0	0
 `
 )
 
@@ -93,6 +93,19 @@ func TestNewNetfilterRouteFailsWhenExecutableNotFound(t *testing.T) {
 
 	_, err := NewNetfilterRoute(mockExec)
 	assert.Error(t, err, "Expected error when executable's path lookup fails")
+}
+
+func TestNewNetfilterRouteWithDefaultOffhostIntrospectionInterfaceFallback(t *testing.T) {
+	defer overrideIPRouteInput("")()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockExec := NewMockExec(ctrl)
+	mockExec.EXPECT().LookPath(iptablesExecutable).Return("", nil)
+
+	_, err := NewNetfilterRoute(mockExec)
+	assert.NoError(t, err)
+	assert.Equal(t, defaultOffhostIntrospectionInterface, fallbackOffhostIntrospectionInterface)
 }
 
 func TestCreate(t *testing.T) {
@@ -510,7 +523,7 @@ func TestGetBlockIntrospectionOffhostAccessInputChainArgs(t *testing.T) {
 	assert.Equal(t, []string{
 		"INPUT",
 		"-p", "tcp",
-		"-i", "eth0",
+		"-i", "ens5",
 		"--dport", "51678",
 		"-j", "DROP",
 	}, getBlockIntrospectionOffhostAccessInputChainArgs())

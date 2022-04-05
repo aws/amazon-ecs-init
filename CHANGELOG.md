@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.61.0-1
+* Cache Agent version 1.61.0
+* Check ipv4 routes for default network interface instead of defaulting to eth0
+
 ## 1.60.1-1
 * Cache Agent version 1.60.1
 

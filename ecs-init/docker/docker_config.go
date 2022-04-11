@@ -31,16 +31,6 @@ func getPlatformSpecificEnvVariables() map[string]string {
 // createHostConfig creates the host config for the ECS Agent container
 // It mounts leases and pid file directories when built for Amazon Linux AMI
 func createHostConfig(binds []string) *godocker.HostConfig {
-	binds = append(binds,
-		config.ProcFS+":"+hostProcDir+readOnly,
-		iptablesUsrLibDir+":"+iptablesUsrLibDir+readOnly,
-		iptablesLibDir+":"+iptablesLibDir+readOnly,
-		iptablesUsrLib64Dir+":"+iptablesUsrLib64Dir+readOnly,
-		iptablesLib64Dir+":"+iptablesLib64Dir+readOnly,
-		iptablesExecutableHostDir+":"+iptablesExecutableContainerDir+readOnly,
-		iptablesAltDir+":"+iptablesAltDir+readOnly,
-		iptablesLegacyDir+":"+iptablesLegacyDir+readOnly,
-	)
 
 	logConfig := config.AgentDockerLogDriverConfiguration()
 

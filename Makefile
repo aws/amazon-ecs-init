@@ -162,7 +162,7 @@ get-deps:
 	GO111MODULE=on go get github.com/fzipp/gocyclo/cmd/gocyclo@v0.3.1
 	go get golang.org/x/tools/cmd/goimports
 	go get github.com/golang/mock/mockgen
-	go get honnef.co/go/tools/cmd/staticcheck
+	GO111MODULE=on go get honnef.co/go/tools/cmd/staticcheck@v0.2.1
 
 clean:
 	-rm -f ecs-init.spec

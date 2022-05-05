@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.61.1-1
+* Cache Agent version 1.61.1
+* Install script no longer fails on systems using cgroups v2
+* Add GO111MODULE=on to honnef.co/go/tools/cmd/staticcheck
+
 ## 1.61.0-1
 * Cache Agent version 1.61.0
 * Check ipv4 routes for default network interface instead of defaulting to eth0

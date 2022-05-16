@@ -12,6 +12,15 @@
 # License for the specific language governing permissions and
 # limitations under the License.
 VERSION = $(shell cat ecs-init/ECSVERSION)
+ARCH:=$(shell uname -m)
+ifeq (${ARCH},x86_64)
+	AGENT_FILENAME=ecs-agent-v${VERSION}.tar
+else ifeq (${ARCH},aarch64)
+	AGENT_FILENAME=ecs-agent-arm64-v${VERSION}.tar
+# osx M1 instances
+else ifeq (${ARCH},arm64)
+	AGENT_FILENAME=ecs-agent-arm64-v${VERSION}.tar
+endif
 
 .PHONY: dev generate lint static test build-mock-images sources rpm srpm govet rpm-in-docker
 
@@ -104,7 +113,7 @@ sources: prepare-sources sources.tgz
 
 srpm: .srpm-done
 
-.rpm-done: sources.tgz
+.rpm-done: scripts/amazon-ecs-logs-collector.sh sources.tgz ${AGENT_FILENAME}
 	test -e SOURCES || ln -s . SOURCES
 	rpmbuild --define "%_topdir $(PWD)" -bb ecs-init.spec
 	find RPMS/ -type f -exec cp {} . \;
@@ -112,15 +121,10 @@ srpm: .srpm-done
 
 rpm: .rpm-done
 
-ARCH:=$(shell uname -m)
-ifeq (${ARCH},x86_64)
-	AGENT_FILENAME=ecs-agent-v${VERSION}.tar
-else ifeq (${ARCH},aarch64)
-	AGENT_FILENAME=ecs-agent-arm64-v${VERSION}.tar
-# osx M1 instances
-else ifeq (${ARCH},arm64)
-	AGENT_FILENAME=ecs-agent-arm64-v${VERSION}.tar
-endif
+scripts/amazon-ecs-logs-collector.sh:
+	mkdir -p BUILDROOT
+	curl -o BUILDROOT/amazon-ecs-logs-collector.sh https://raw.githubusercontent.com/aws/amazon-ecs-logs-collector/master/ecs-logs-collector.sh
+	cp BUILDROOT/amazon-ecs-logs-collector.sh scripts/amazon-ecs-logs-collector.sh
 
 BUILDROOT/ecs-agent.tar:
 	mkdir -p BUILDROOT
@@ -186,3 +190,4 @@ clean:
 	-rm -f cover.out
 	-rm -f coverprofile.out
 	-rm -f amazon-ecs-volume-plugin
+	-rm -f scripts/amazon-ecs-logs-collector.sh

@@ -173,6 +173,7 @@ required routes among its preparation steps.
 
 %install
 install -D amazon-ecs-init %{buildroot}%{_libexecdir}/amazon-ecs-init
+install -D scripts/amazon-ecs-logs-collector.sh %{buildroot}%{_libexecdir}/amazon-ecs-logs-collector.sh
 install -D amazon-ecs-volume-plugin %{buildroot}%{_libexecdir}/amazon-ecs-volume-plugin
 install -m %{no_exec_perm} -D scripts/amazon-ecs-init.1 %{buildroot}%{_mandir}/man1/amazon-ecs-init.1
 
@@ -199,6 +200,7 @@ install -m %{no_exec_perm} -D %{SOURCE5} %{buildroot}%{_sysconfdir}/init/amazon-
 
 %files
 %{_libexecdir}/amazon-ecs-init
+%{_libexecdir}/amazon-ecs-logs-collector.sh
 %{_mandir}/man1/amazon-ecs-init.1*
 %{_libexecdir}/amazon-ecs-volume-plugin
 %config(noreplace) %ghost %{_sysconfdir}/ecs/ecs.config

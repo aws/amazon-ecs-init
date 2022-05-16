@@ -14,6 +14,7 @@
 package engine
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -248,8 +249,24 @@ func (e *Engine) StartSupervised() error {
 			return engineError("could not remove existing Agent container", err)
 		}
 
+		log.Info("Starting the log collector trigger watcher")
+		ctx, cancelLogTriggerWatcher := context.WithCancel(context.Background())
+		go func() {
+			for {
+				bundle, err := e.logCollectorTriggerWatcher(ctx)
+				if err != nil {
+					log.Infof("log bundle error: %s", err)
+					continue
+				}
+				if bundle != "" {
+					log.Infof("Successfully collected a log bundle: %s", bundle)
+				}
+			}
+		}()
+
 		log.Info("Starting Amazon Elastic Container Service Agent")
 		agentExitCode, err = docker.StartAgent()
+		cancelLogTriggerWatcher()
 		if err != nil {
 			return engineError("could not start Agent", err)
 		}

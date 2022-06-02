@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.61.2-1
+* Cache Agent version 1.61.2
+
 ## 1.61.1-1
 * Cache Agent version 1.61.1
 * Install script no longer fails on systems using cgroups v2

@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.62.0-1
+* Update golang version 1.18.3
+
 ## 1.61.3-1
 * Cache Agent version 1.61.3
 

@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.62.1-1
+* Fix bug in cgroup mount for rpm builds
+
 ## 1.62.0-1
 * Update golang version 1.18.3
 
